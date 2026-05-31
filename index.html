@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VaultTrack — Personal Savings Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-card {
+            background: rgba(51, 65, 85, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card:hover {
+            background: rgba(51, 65, 85, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .beating-inflation {
+            border-left: 4px solid #10b981;
+        }
+        
+        .losing-inflation {
+            border-left: 4px solid #f43f5e;
+        }
+        
+        .month-tab {
+            transition: all 0.2s ease;
+        }
+        
+        .month-tab.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.5);
+            color: #60a5fa;
+        }
+        
+        .input-field {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: rgba(59, 130, 246, 0.5);
+            background: rgba(15, 23, 42, 0.8);
+        }
+        
+        .number-transition {
+            transition: color 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-slide-in {
+            animation: slideIn 0.4s ease-out;
+        }
+        
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+        }
+        
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); }
+        }
+        
+        .pulse-beating {
+            animation: pulse-green 2s infinite;
+        }
+        
+        .pulse-losing {
+            animation: pulse-red 2s infinite;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        
+        .currency-input::-webkit-inner-spin-button,
+        .currency-input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="text-slate-200 antialiased">
+
+    <div class="max-w-6xl mx-auto px-4 py-6 pb-20">
+        
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                        <i data-lucide="shield-check" class="w-8 h-8 text-blue-500"></i>
+                        VaultTrack
+                    </h1>
+                    <p class="text-slate-400 mt-1">Track your savings across Nigerian platforms against inflation</p>
+                </div>
+                <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-500/20 font-medium">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    Add Platform
+                </button>
+            </div>
+        </header>
+
+        <!-- Month Navigation -->
+        <div class="glass-panel rounded-2xl p-4 mb-6 overflow-x-auto custom-scrollbar">
+            <div class="flex gap-2 min-w-max" id="monthTabs">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+
+        <!-- Dashboard Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- Total Balance -->
+            <div class="glass-card rounded-2xl p-5 animate-slide-in" style="animation-delay: 0ms">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-slate-400 text-sm font-medium">Total Balance</span>
+                    <div class="p-2 bg-blue-500/10 rounded-lg">
+                        <i data-lucide="wallet" class="w-5 h-5 text-blue-400"></i>
+                    </div>
+                </div>
+                <div class="text-2xl font-bold text-white number-transition" id="totalBalance">₦0.00</div>
+                <div class="text-xs text-slate-500 mt-1">Across all platforms</div>
+            </div>
+
+            <!-- Monthly Yield -->
+            <div class="glass-card rounded-2xl p-5 animate-slide-in" style="animation-delay: 50ms">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-slate-400 text-sm font-medium">Monthly Yield</span>
+                    <div class="p-2 bg-emerald-500/10 rounded-lg">
+                        <i data-lucide="piggy-bank" class="w-5 h-5 text-emerald-400"></i>
+                    </div>
+                </div>
+                <div class="text-2xl font-bold text-emerald-400 number-transition" id="monthlyYield">₦0.00</div>
+                <div class="text-xs text-slate-500 mt-1">Interest earned this month</div>
+            </div>
+
+            <!-- Average APY -->
+            <div class="glass-card rounded-2xl p-5 animate-slide-in" style="animation-delay: 100ms">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-slate-400 text-sm font-medium">Average APY</span>
+                    <div class="p-2 bg-purple-500/10 rounded-lg">
+                        <i data-lucide="percent" class="w-5 h-5 text-purple-400"></i>
+                    </div>
+                </div>
+                <div class="text-2xl font-bold text-purple-400 number-transition" id="averageAPY">0.00%</div>
+                <div class="text-xs text-slate-500 mt-1">Annualized yield</div>
+            </div>
+
+            <!-- Inflation Status -->
+            <div class="glass-card rounded-2xl p-5 animate-slide-in" style="animation-delay: 150ms" id="inflationStatusCard">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-slate-400 text-sm font-medium">Inflation Beat</span>
+                    <div class="p-2 bg-slate-500/10 rounded-lg" id="inflationIconBg">
+                        <i data-lucide="activity" class="w-5 h-5 text-slate-400" id="inflationIcon"></i>
+                    </div>
+                </div>
+                <div class="text-2xl font-bold number-transition" id="inflationStatus">—</div>
+                <div class="text-xs text-slate-500 mt-1">vs <span id="inflationRateDisplay">0.00</span>% inflation</div>
+            </div>
+        </div>
+
+        <!-- Inflation Rate Input -->
+        <div class="glass-panel rounded-2xl p-5 mb-8">
+            <div class="flex flex-col md:flex-row md:items-center gap-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Monthly Inflation Rate (%)</label>
+                    <div class="relative max-w-xs">
+                        <input type="number" step="0.01" id="inflationInput" placeholder="e.g. 15.06" 
+                            class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-slate-500">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">%</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">Source: NBS — update monthly</p>
+                </div>
+                <div class="flex items-center gap-3 text-sm text-slate-400 bg-slate-800/50 px-4 py-3 rounded-xl">
+                    <i data-lucide="info" class="w-4 h-4"></i>
+                    <span>Your average APY is compared against this rate</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Platforms Section -->
+        <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                <i data-lucide="layers" class="w-5 h-5 text-slate-400"></i>
+                Savings Platforms
+            </h2>
+            <span class="text-sm text-slate-500" id="platformCount">0 platforms</span>
+        </div>
+
+        <div id="platformsList" class="grid gap-4">
+            <!-- Platform cards generated by JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden glass-panel rounded-2xl p-12 text-center">
+            <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="plus-circle" class="w-8 h-8 text-slate-500"></i>
+            </div>
+            <h3 class="text-lg font-medium text-white mb-2">No platforms added yet</h3>
+            <p class="text-slate-400 mb-6">Start tracking your savings by adding your first platform</p>
+            <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl transition-colors">
+                Add Your First Platform
+            </button>
+        </div>
+    </div>
+
+    <!-- Add Platform Modal -->
+    <div id="addModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="glass-panel rounded-2xl p-6 w-full max-w-md animate-slide-in">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-semibold text-white">Add New Platform</h3>
+                <button onclick="closeAddModal()" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-5 h-5 text-slate-400"></i>
+                </button>
+            </div>
+            
+            <form id="addPlatformForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Platform Name</label>
+                    <input type="text" id="platformName" required placeholder="e.g. PiggyVest"
+                        class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-slate-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Savings Type</label>
+                    <select id="savingsType" required
+                        class="input-field w-full px-4 py-3 rounded-xl text-white bg-transparent">
+                        <option value="" class="bg-slate-800">Select type...</option>
+                        <option value="Flex" class="bg-slate-800">Flex</option>
+                        <option value="Locked" class="bg-slate-800">Locked</option>
+                        <option value="Mutual Fund" class="bg-slate-800">Mutual Fund</option>
+                        <option value="Fixed Income" class="bg-slate-800">Fixed Income</option>
+                        <option value="Other" class="bg-slate-800">Other</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Initial Deposit (₦)</label>
+                    <input type="number" id="initialDeposit" required min="0" step="0.01" placeholder="0.00"
+                        class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-slate-500 currency-input">
+                </div>
+                
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition-all mt-2">
+                    Add Platform
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+        
+        let state = {
+            currentMonth: 0,
+            inflationRate: 15.06,
+            platforms: []
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            renderMonthTabs();
+            renderDashboard();
+            lucide.createIcons();
+            
+            // Inflation input listener
+            const inflationInput = document.getElementById('inflationInput');
+            inflationInput.value = state.inflationRate;
+            inflationInput.addEventListener('input', (e) => {
+                state.inflationRate = parseFloat(e.target.value) || 0;
+                saveToStorage();
+                updateDashboard();
+            });
+        });
+
+        // Storage Functions
+        function saveToStorage() {
+            localStorage.setItem('vaultTrackData', JSON.stringify(state));
+        }
+
+        function loadFromStorage() {
+            const saved = localStorage.getItem('vaultTrackData');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                state = { ...state, ...parsed };
+            }
+        }
+
+        // Month Navigation
+        function renderMonthTabs() {
+            const container = document.getElementById('monthTabs');
+            container.innerHTML = months.map((month, index) => `
+                <button onclick="setMonth(${index})" 
+                    class="month-tab px-4 py-2 rounded-lg text-sm font-medium border border-transparent ${index === state.currentMonth ? 'active' : 'text-slate-400 hover:text-white hover:bg-slate-800'}">
+                    ${month.substring(0, 3)}
+                </button>
+            `).join('');
+        }
+
+        function setMonth(index) {
+            state.currentMonth = index;
+            renderMonthTabs();
+            renderDashboard();
+        }
+
+        // Platform Management
+        function openAddModal() {
+            document.getElementById('addModal').classList.remove('hidden');
+            document.getElementById('addModal').classList.add('flex');
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.add('hidden');
+            document.getElementById('addModal').classList.remove('flex');
+            document.getElementById('addPlatformForm').reset();
+        }
+
+        document.getElementById('addPlatformForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('platformName').value;
+            const type = document.getElementById('savingsType').value;
+            const initial = parseFloat(document.getElementById('initialDeposit').value) || 0;
+            
+            const platform = {
+                id: Date.now().toString(),
+                name,
+                type,
+                data: {}
+            };
+            
+            // Initialize data for all months
+            for (let i = 0; i < 12; i++) {
+                platform.data[i] = {
+                    initial: i === 0 ? initial : 0, // First month gets the initial deposit
+                    additional: 0,
+                    interest: 0
+                };
+            }
+            
+            state.platforms.push(platform);
+            saveToStorage();
+            closeAddModal();
+            renderDashboard();
+        });
+
+        function deletePlatform(id) {
+            if (confirm('Are you sure you want to delete this platform?')) {
+                state.platforms = state.platforms.filter(p => p.id !== id);
+                saveToStorage();
+                renderDashboard();
+            }
+        }
+
+        function updatePlatformData(id, field, value) {
+            const platform = state.platforms.find(p => p.id === id);
+            if (!platform) return;
+            
+            const monthData = platform.data[state.currentMonth];
+            const numValue = parseFloat(value) || 0;
+            
+            monthData[field] = numValue;
+            
+            // If this is not the last month, carry forward balance to next month
+            if (state.currentMonth < 11) {
+                const currentBalance = calculateMonthBalance(platform, state.currentMonth);
+                const nextMonthData = platform.data[state.currentMonth + 1];
+                
+                // Only auto-update if next month hasn't been manually edited (simple heuristic: if additional and interest are 0)
+                if (nextMonthData.additional === 0 && nextMonthData.interest === 0) {
+                    nextMonthData.initial = currentBalance;
+                }
+            }
+            
+            saveToStorage();
+            renderDashboard();
+        }
+
+        function calculateMonthBalance(platform, monthIndex) {
+            const data = platform.data[monthIndex];
+            return data.initial + data.additional + data.interest;
+        }
+
+        function calculateAPY(platform, monthIndex) {
+            const data = platform.data[monthIndex];
+            const principal = data.initial + data.additional;
+            if (principal <= 0) return 0;
+            return (data.interest / principal) * 12 * 100;
+        }
+
+        // Rendering
+        function renderDashboard() {
+            const container = document.getElementById('platformsList');
+            const emptyState = document.getElementById('emptyState');
+            const platformCount = document.getElementById('platformCount');
+            
+            if (state.platforms.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                platformCount.textContent = '0 platforms';
+                updateSummaryCards(0, 0, 0);
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            platformCount.textContent = `${state.platforms.length} platform${state.platforms.length !== 1 ? 's' : ''}`;
+            
+            let totalBalance = 0;
+            let totalYield = 0;
+            let totalAPY = 0;
+            let validAPYCount = 0;
+            
+            container.innerHTML = state.platforms.map(platform => {
+                const data = platform.data[state.currentMonth];
+                const balance = calculateMonthBalance(platform, state.currentMonth);
+                const apy = calculateAPY(platform, state.currentMonth);
+                const isBeating = apy > state.inflationRate;
+                
+                totalBalance += balance;
+                totalYield += data.interest;
+                if (apy > 0) {
+                    totalAPY += apy;
+                    validAPYCount++;
+                }
+                
+                const borderClass = apy > 0 ? (isBeating ? 'beating-inflation' : 'losing-inflation') : 'border-l-4 border-slate-700';
+                
+                return `
+                    <div class="glass-card rounded-2xl p-5 ${borderClass} animate-slide-in">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <div class="flex items-center gap-3 mb-1">
+                                    <h3 class="text-lg font-semibold text-white">${platform.name}</h3>
+                                    <span class="px-2 py-1 bg-slate-700/50 rounded-md text-xs text-slate-300 border border-slate-600">
+                                        ${platform.type}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm">
+                                    <span class="${isBeating ? 'text-emerald-400' : 'text-rose-400'} font-medium">
+                                        ${apy.toFixed(2)}% APY
+                                    </span>
+                                    <span class="text-slate-500">•</span>
+                                    <span class="text-slate-400">
+                                        ${isBeating ? 'Beating inflation' : 'Losing to inflation'}
+                                    </span>
+                                </div>
+                            </div>
+                            <button onclick="deletePlatform('${platform.id}')" class="p-2 hover:bg-rose-500/10 hover:text-rose-400 text-slate-500 rounded-lg transition-colors">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1.5">Initial Balance</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₦</span>
+                                    <input type="number" step="0.01" 
+                                        value="${data.initial.toFixed(2)}"
+                                        onchange="updatePlatformData('${platform.id}', 'initial', this.value)"
+                                        class="input-field w-full pl-8 pr-3 py-2.5 rounded-lg text-sm text-white currency-input"
+                                        ${state.currentMonth > 0 ? 'readonly' : ''}>
+                                </div>
+                                ${state.currentMonth > 0 ? '<p class="text-[10px] text-slate-500 mt-1">Auto-carried from previous month</p>' : ''}
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1.5">
+                                    ${state.currentMonth === 0 ? 'Additional Deposit' : 'Deposits (+) / Withdrawals (-)'}
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₦</span>
+                                    <input type="number" step="0.01" 
+                                        value="${data.additional === 0 ? '' : data.additional.toFixed(2)}"
+                                        onchange="updatePlatformData('${platform.id}', 'additional', this.value)"
+                                        placeholder="0.00"
+                                        class="input-field w-full pl-8 pr-3 py-2.5 rounded-lg text-sm text-white currency-input">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1.5">Interest/Yield</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₦</span>
+                                    <input type="number" step="0.01" 
+                                        value="${data.interest === 0 ? '' : data.interest.toFixed(2)}"
+                                        onchange="updatePlatformData('${platform.id}', 'interest', this.value)"
+                                        placeholder="0.00"
+                                        class="input-field w-full pl-8 pr-3 py-2.5 rounded-lg text-sm text-white currency-input">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1.5">Current Balance</label>
+                                <div class="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2.5">
+                                    <span class="text-sm font-semibold text-white">₦${balance.toLocaleString('en-NG', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            const avgAPY = validAPYCount > 0 ? totalAPY / validAPYCount : 0;
+            updateSummaryCards(totalBalance, totalYield, avgAPY);
+            
+            lucide.createIcons();
+        }
+
+        function updateSummaryCards(totalBalance, totalYield, avgAPY) {
+            // Animate numbers
+            animateValue('totalBalance', totalBalance, 'currency');
+            animateValue('monthlyYield', totalYield, 'currency');
+            animateValue('averageAPY', avgAPY, 'percent');
+            
+            // Inflation status
+            const statusEl = document.getElementById('inflationStatus');
+            const iconEl = document.getElementById('inflationIcon');
+            const iconBg = document.getElementById('inflationIconBg');
+            const rateDisplay = document.getElementById('inflationRateDisplay');
+            const card = document.getElementById('inflationStatusCard');
+            
+            rateDisplay.textContent = state.inflationRate.toFixed(2);
+            
+            if (avgAPY > state.inflationRate) {
+                statusEl.textContent = 'Beating';
+                statusEl.className = 'text-2xl font-bold text-emerald-400 number-transition';
+                iconEl.setAttribute('data-lucide', 'trending-up');
+                iconBg.className = 'p-2 bg-emerald-500/10 rounded-lg';
+                iconEl.className = 'w-5 h-5 text-emerald-400';
+                card.classList.add('pulse-beating');
+                card.classList.remove('pulse-losing');
+            } else {
+                statusEl.textContent = 'Losing';
+                statusEl.className = 'text-2xl font-bold text-rose-400 number-transition';
+                iconEl.setAttribute('data-lucide', 'trending-down');
+                iconBg.className = 'p-2 bg-rose-500/10 rounded-lg';
+                iconEl.className = 'w-5 h-5 text-rose-400';
+                card.classList.add('pulse-losing');
+                card.classList.remove('pulse-beating');
+            }
+            
+            lucide.createIcons();
+        }
+
+        function updateDashboard() {
+            renderDashboard();
+        }
+
+        function animateValue(id, value, type) {
+            const el = document.getElementById(id);
+            const start = parseFloat(el.textContent.replace(/[^0-9.-]/g, '')) || 0;
+            const duration = 500;
+            const startTime = performance.now();
+            
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                
+                const current = start + (value - start) * easeOut;
+                
+                if (type === 'currency') {
+                    el.textContent = '₦' + current.toLocaleString('en-NG', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                } else {
+                    el.textContent = current.toFixed(2) + '%';
+                }
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+            
+            requestAnimationFrame(update);
+        }
+
+        // Close modal on outside click
+        document.getElementById('addModal').addEventListener('click', (e) => {
+            if (e.target.id === 'addModal') {
+                closeAddModal();
+            }
+        });
+    </script>
+<script src="https://deepsite.hf.co/deepsite-badge.js"></script>
+</body>
+</html>
