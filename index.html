@@ -326,6 +326,10 @@
             if (saved) {
                 const parsed = JSON.parse(saved);
                 state = { ...state, ...parsed };
+                // Backfill startMonth for platforms saved before this feature existed
+                state.platforms.forEach(p => {
+                    if (typeof p.startMonth !== 'number') p.startMonth = 0;
+                });
             }
         }
 
@@ -365,17 +369,18 @@
             const type = document.getElementById('savingsType').value;
             const initial = parseFloat(document.getElementById('initialDeposit').value) || 0;
             
-            const platform = {
+           const platform = {
                 id: Date.now().toString(),
                 name,
                 type,
+                startMonth: state.currentMonth,
                 data: {}
             };
             
-            // Initialize data for all months
+            // Initialize all months; the deposit lands in the month you added it
             for (let i = 0; i < 12; i++) {
                 platform.data[i] = {
-                    initial: i === 0 ? initial : 0, // First month gets the initial deposit
+                    initial: i === state.currentMonth ? initial : 0,
                     additional: 0,
                     interest: 0
                 };
@@ -437,7 +442,10 @@
             const emptyState = document.getElementById('emptyState');
             const platformCount = document.getElementById('platformCount');
             
-            if (state.platforms.length === 0) {
+            // Only show platforms that already existed by the selected month
+            const visiblePlatforms = state.platforms.filter(p => p.startMonth <= state.currentMonth);
+            
+            if (visiblePlatforms.length === 0) {
                 container.innerHTML = '';
                 emptyState.classList.remove('hidden');
                 platformCount.textContent = '0 platforms';
@@ -446,14 +454,14 @@
             }
             
             emptyState.classList.add('hidden');
-            platformCount.textContent = `${state.platforms.length} platform${state.platforms.length !== 1 ? 's' : ''}`;
+            platformCount.textContent = `${visiblePlatforms.length} platform${visiblePlatforms.length !== 1 ? 's' : ''}`;
             
             let totalBalance = 0;
             let totalYield = 0;
             let totalAPY = 0;
             let validAPYCount = 0;
             
-            container.innerHTML = state.platforms.map(platform => {
+            container.innerHTML = visiblePlatforms.map(platform => {
                 const data = platform.data[state.currentMonth];
                 const balance = calculateMonthBalance(platform, state.currentMonth);
                 const apy = calculateAPY(platform, state.currentMonth);
@@ -502,14 +510,14 @@
                                         value="${data.initial.toFixed(2)}"
                                         onchange="updatePlatformData('${platform.id}', 'initial', this.value)"
                                         class="input-field w-full pl-8 pr-3 py-2.5 rounded-lg text-sm text-white currency-input"
-                                        ${state.currentMonth > 0 ? 'readonly' : ''}>
+                                       ${state.currentMonth > platform.startMonth ? 'readonly' : ''}>
                                 </div>
-                                ${state.currentMonth > 0 ? '<p class="text-[10px] text-slate-500 mt-1">Auto-carried from previous month</p>' : ''}
+                               ${state.currentMonth > platform.startMonth ? '<p class="text-[10px] text-slate-500 mt-1">Auto-carried from previous month</p>' : ''}
                             </div>
                             
                             <div>
                                 <label class="block text-xs font-medium text-slate-400 mb-1.5">
-                                    ${state.currentMonth === 0 ? 'Additional Deposit' : 'Deposits (+) / Withdrawals (-)'}
+                                   ${state.currentMonth === platform.startMonth ? 'Additional Deposit' : 'Deposits (+) / Withdrawals (-)'}
                                 </label>
                                 <div class="relative">
                                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₦</span>

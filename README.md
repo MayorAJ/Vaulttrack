@@ -21,4 +21,4 @@ Usage
 No installation needed. Open index.html in any browser and start adding your platforms.
 Update the inflation rate field monthly using the latest figure from the National Bureau of Statistics.
 Status
-v1.0.1 — functional and in active personal use. UI improvements and multi-currency support planned.
+v1.0.2 — functional and in active personal use. UI improvements and multi-currency support planned.
