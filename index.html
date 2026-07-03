@@ -137,10 +137,16 @@
                     </h1>
                     <p class="text-slate-400 mt-1">Track your savings across Nigerian platforms against inflation</p>
                 </div>
-                <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-500/20 font-medium">
-                    <i data-lucide="plus" class="w-5 h-5"></i>
-                    Add Platform
-                </button>
+                <div class="flex items-center gap-3">
+                    <button onclick="exportToCSV()" class="bg-slate-700 hover:bg-slate-600 text-white px-5 py-3 rounded-xl flex items-center gap-2 transition-all font-medium">
+                        <i data-lucide="download" class="w-5 h-5"></i>
+                        Export
+                    </button>
+                    <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-500/20 font-medium">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                        Add Platform
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -435,7 +441,84 @@
             if (principal <= 0) return 0;
             return (data.interest / principal) * 12 * 100;
         }
+          // Export to CSV, grouped by month with monthly totals (opens in Excel)
+        function exportToCSV() {
+            if (state.platforms.length === 0) {
+                alert('Nothing to export yet. Add a platform first.');
+                return;
+            }
 
+            const headers = ['Month', 'Platform', 'Type', 'Initial Balance', 'Deposits/Withdrawals', 'Interest/Yield', 'Current Balance', 'APY (%)'];
+            const rows = [headers];
+
+            for (let i = 0; i < 12; i++) {
+                // Platforms that exist and have any value in this month
+                const monthPlatforms = state.platforms.filter(p =>
+                    p.startMonth <= i &&
+                    (p.data[i].initial !== 0 || p.data[i].additional !== 0 || p.data[i].interest !== 0)
+                );
+
+                if (monthPlatforms.length === 0) continue;
+
+                let tInitial = 0, tDeposits = 0, tInterest = 0, tBalance = 0;
+
+                monthPlatforms.forEach(p => {
+                    const d = p.data[i];
+                    const balance = calculateMonthBalance(p, i);
+                    const apy = calculateAPY(p, i);
+
+                    tInitial += d.initial;
+                    tDeposits += d.additional;
+                    tInterest += d.interest;
+                    tBalance += balance;
+
+                    rows.push([
+                        months[i],
+                        p.name,
+                        p.type,
+                        d.initial.toFixed(2),
+                        d.additional.toFixed(2),
+                        d.interest.toFixed(2),
+                        balance.toFixed(2),
+                        apy.toFixed(2)
+                    ]);
+                });
+
+                const principal = tInitial + tDeposits;
+                const totalAPY = principal > 0 ? (tInterest / principal) * 12 * 100 : 0;
+
+                rows.push([
+                    months[i],
+                    'TOTAL',
+                    '',
+                    tInitial.toFixed(2),
+                    tDeposits.toFixed(2),
+                    tInterest.toFixed(2),
+                    tBalance.toFixed(2),
+                    totalAPY.toFixed(2)
+                ]);
+
+                rows.push([]); // blank separator row between months
+            }
+
+            const csv = rows.map(row =>
+                row.map(cell => {
+                    const s = String(cell);
+                    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+                }).join(',')
+            ).join('\n');
+
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const date = new Date().toISOString().split('T')[0];
+            a.href = url;
+            a.download = `vaulttrack-${date}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
         // Rendering
         function renderDashboard() {
             const container = document.getElementById('platformsList');
