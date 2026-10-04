@@ -14,8 +14,8 @@
     </script>
 
     <style>
-        :root{--bg:#130f0e;--line:#2f2321;--ink:#f6ebe6;--grey:#a8978f;--good:#5fd38d;--bad:#f2766b;--btn:#e8b4a0;--btnt:#2a1410;--logo:#e8b4a0;--logoon:#2a1410;--focus:#e8b4a0;color-scheme:dark}
-        :root[data-theme="light"]{--bg:#f5efe9;--line:#e2d6cc;--ink:#1d1512;--grey:#6b5f58;--good:#187c49;--bad:#c23a2e;--btn:#1d1512;--btnt:#f5efe9;--logo:#c8814a;--logoon:#f5efe9;--focus:#1d1512;color-scheme:light}
+        :root{--bg:#130f0e;--line:#2f2321;--ink:#f6ebe6;--grey:#a8978f;--good:#5fd38d;--bad:#f2766b;--btn:#e8b4a0;--btnt:#2a1410;--logo:#e8b4a0;--logoon:#2a1410;--focus:#e8b4a0;--eq:#e8b4a0;color-scheme:dark}
+        :root[data-theme="light"]{--bg:#f5efe9;--line:#e2d6cc;--ink:#1d1512;--grey:#6b5f58;--good:#187c49;--bad:#c23a2e;--btn:#1d1512;--btnt:#f5efe9;--logo:#c8814a;--logoon:#f5efe9;--focus:#1d1512;--eq:#b0662f;color-scheme:light}
         :root{--ul:color-mix(in srgb,var(--grey) 75%,var(--bg))}
 
         .sw1{background:radial-gradient(90% 120% at 90% 0%,rgba(255,255,255,.75),rgba(255,255,255,0) 45%),radial-gradient(60% 90% at 10% 100%,rgba(200,129,74,.55),rgba(200,129,74,0) 60%),conic-gradient(from 200deg at 40% 60%,#f3f0ee,#f2c6c0,#e8b4a0,#f6e3c8,#e0a08a,#f3f0ee,#f2c6c0)}
@@ -116,6 +116,21 @@
         .empty p{margin:0 0 16px}
         .empty .tag{margin-bottom:4px;color:var(--ink);font-weight:500}
 
+        /* View tabs and Trends */
+        .tabs{display:flex;gap:22px;margin-top:18px;border-bottom:1px solid var(--line)}
+        .tab{margin-bottom:-1px;padding:10px 2px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--grey);font:500 12px/1 'IBM Plex Mono',ui-monospace,monospace}
+        .tab:hover{color:var(--ink)}
+        .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--eq)}
+        .trends{margin-top:16px}
+        .tr-read{min-height:3.2em;font:400 12px/1.6 'IBM Plex Mono',ui-monospace,monospace;color:var(--grey)}
+        .tr-read .l1{color:var(--ink);font-weight:500;font-size:13px}
+        .tr-chart{touch-action:pan-y;-webkit-user-select:none;user-select:none}
+        .tr-chart svg{display:block;width:100%;height:auto}
+        .tr-ax{font:400 11px 'IBM Plex Mono',ui-monospace,monospace;fill:var(--grey)}
+        .tr-ax.faint{opacity:.4}
+        .tr-cross{stroke:var(--grey);stroke-opacity:.5;stroke-width:1}
+        .tr-base{stroke:var(--line);stroke-width:1}
+
         /* Footer */
         .foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:24px;padding-top:16px;border-top:1px solid var(--line);font:400 12px/1 'IBM Plex Mono',ui-monospace,monospace;color:var(--grey)}
         .foot .where{display:inline-flex;align-items:center;gap:6px}
@@ -209,8 +224,14 @@
             <p class="cap" id="inflationLabel">Annual inflation (YoY). NBS headline figure, update monthly.</p>
         </section>
 
+        <!-- View tabs -->
+        <div class="tabs" id="viewTabs" role="tablist" aria-label="View">
+            <button type="button" class="tab" id="tabLedger" role="tab" aria-selected="true" aria-controls="ledgerView" onclick="showView('ledger')">Ledger</button>
+            <button type="button" class="tab" id="tabTrends" role="tab" aria-selected="false" aria-controls="trendsView" tabindex="-1" onclick="showView('trends')">Trends</button>
+        </div>
+
         <!-- Ledger -->
-        <section class="ledger" aria-label="Savings platforms">
+        <section class="ledger" id="ledgerView" role="tabpanel" aria-labelledby="tabLedger">
             <div class="lh" id="ledgerHead" aria-hidden="true">
                 <span>Platform</span>
                 <span>Deposit or withdraw</span>
@@ -228,6 +249,15 @@
                     <span>Add platform</span>
                 </button>
             </div>
+        </section>
+
+        <!-- Trends (read-only, derived from state) -->
+        <section class="trends" id="trendsView" role="tabpanel" aria-labelledby="tabTrends" hidden>
+            <div class="tr-read" id="trendsReadout">
+                <div class="l1" id="trLine1"></div>
+                <div id="trLine2"></div>
+            </div>
+            <div class="tr-chart" id="trendsChart"></div>
         </section>
 
         <!-- Footer -->
@@ -324,6 +354,7 @@
             const btn = document.getElementById('themeToggle');
             btn.textContent = theme === 'light' ? 'Dark mode' : 'Light mode';
             btn.setAttribute('aria-label', theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode');
+            drawTrends();
         }
 
         function toggleTheme() {
@@ -589,6 +620,7 @@
                     const landed = document.activeElement;
                     const key = landed && landed.dataset ? landed.dataset.k : null;
                     paintDashboard();
+                    drawTrends();
                     if (key) {
                         const next = document.querySelector(`#platformsList [data-k="${key}"]`);
                         if (next) {
@@ -600,6 +632,7 @@
                 return;
             }
             paintDashboard();
+            drawTrends();
         }
 
         function paintDashboard() {
@@ -727,6 +760,161 @@
         function updateDashboard() {
             renderDashboard();
         }
+
+        // Trends view. Read-only: everything is derived from state. It always opens on Ledger.
+        let view = 'ledger';
+        let trendsPreview = null;   // month under the pointer; shown in the crosshair and readout until it is committed or the pointer leaves
+        let trendsDrawnWidth = 0;
+        let chartDown = false;
+        const TR_PAD_L = 46, TR_PAD_R = 12;
+        const trendsChart = document.getElementById('trendsChart');
+
+        function showView(name) {
+            commitPendingEdit();
+            view = name;
+            trendsPreview = null;
+            document.getElementById('ledgerView').hidden = name === 'trends';
+            document.getElementById('trendsView').hidden = name !== 'trends';
+            [['ledger', 'tabLedger'], ['trends', 'tabTrends']].forEach(([key, id]) => {
+                const tab = document.getElementById(id);
+                tab.setAttribute('aria-selected', key === name);
+                tab.tabIndex = key === name ? 0 : -1;
+            });
+            drawTrends();
+        }
+
+        document.getElementById('viewTabs').addEventListener('keydown', (e) => {
+            const order = ['ledger', 'trends'];
+            let next = null;
+            if (e.key === 'ArrowRight') next = order[(order.indexOf(view) + 1) % order.length];
+            else if (e.key === 'ArrowLeft') next = order[(order.indexOf(view) + order.length - 1) % order.length];
+            else if (e.key === 'Home') next = order[0];
+            else if (e.key === 'End') next = order[order.length - 1];
+            if (!next) return;
+            e.preventDefault();
+            showView(next);
+            document.getElementById(next === 'ledger' ? 'tabLedger' : 'tabTrends').focus();
+        });
+
+        // Per-month balance, net flow, interest and weighted APY, in one pass over state.
+        // Balance and APY reuse calculateMonthBalance and calculateWeightedAPY.
+        // A month where no platform has interest entered has apy null (a gap), never 0.
+        // last is the last month with any entry: a deposit or withdrawal, interest, or a platform starting.
+        function trendSeries() {
+            const rows = [];
+            let last = -1;
+            for (let i = 0; i < 12; i++) {
+                const active = state.platforms.filter(p => p.startMonth <= i);
+                let balance = 0, flow = 0, interest = 0, entry = false;
+                active.forEach(p => {
+                    const d = p.data[i];
+                    balance += calculateMonthBalance(p, i);
+                    flow += (i === p.startMonth ? d.initial : 0) + d.additional;
+                    interest += d.interest;
+                    if (p.startMonth === i || d.additional !== 0 || d.interest !== 0) entry = true;
+                });
+                const hasInterest = active.some(p => p.data[i].interest !== 0);
+                rows.push({ balance, flow, interest, apy: hasInterest ? calculateWeightedAPY(active, i) : null });
+                if (entry) last = i;
+            }
+            return { rows, last };
+        }
+
+        function naira(n) {
+            return (n < 0 ? '-' : '') + '₦' + Math.abs(Math.round(n)).toLocaleString('en-NG');
+        }
+
+        function trendsReadout(i, series) {
+            const name = months[i].slice(0, 3);
+            if (i > series.last) return { l1: name, l2: 'after the last entry, nothing plotted' };
+            const r = series.rows[i];
+            const l1 = `${name} · ${naira(r.balance)} · net ${r.flow > 0 ? '+' : r.flow < 0 ? '-' : ''}${naira(Math.abs(r.flow))}`;
+            if (r.apy === null) return { l1, l2: 'no interest entered' };
+            const over = r.apy > state.inflationRate;
+            const gap = Math.abs(r.apy - state.inflationRate).toFixed(2);
+            return { l1, l2: `${r.apy.toFixed(2)}% APY · ${gap} pts <span class="${over ? 'good' : 'bad'}">${over ? 'over' : 'under'}</span> inflation` };
+        }
+
+        function drawTrends() {
+            if (view !== 'trends') return;
+            const line1 = document.getElementById('trLine1');
+            const line2 = document.getElementById('trLine2');
+            if (!state.platforms.length) {
+                line1.textContent = '';
+                line2.textContent = '';
+                trendsChart.innerHTML = '<div class="empty"><p>Add a platform to see trends.</p></div>';
+                return;
+            }
+            const series = trendSeries();
+            const shown = trendsPreview === null ? state.currentMonth : trendsPreview;
+            const read = trendsReadout(shown, series);
+            line1.textContent = read.l1;
+            line2.innerHTML = read.l2;
+            const width = trendsChart.clientWidth;
+            trendsDrawnWidth = width;
+            if (!width) return;
+            const slot = (width - TR_PAD_L - TR_PAD_R) / 12;
+            const cx = (i) => (TR_PAD_L + slot * (i + 0.5)).toFixed(1);
+            const labels = months.map((m, i) =>
+                `<text class="tr-ax${i > series.last ? ' faint' : ''}" x="${cx(i)}" y="26" text-anchor="middle">${slot >= 34 ? m.slice(0, 3) : String(i + 1).padStart(2, '0')}</text>`
+            ).join('');
+            trendsChart.innerHTML = `<svg viewBox="0 0 ${width} 36" width="${width}" height="36" role="img" aria-label="Month axis. Selected month: ${months[shown]}.">
+                <line class="tr-base" x1="${TR_PAD_L}" x2="${width - TR_PAD_R}" y1="6" y2="6"/>
+                <line class="tr-cross" x1="${cx(shown)}" x2="${cx(shown)}" y1="0" y2="36"/>
+                ${labels}
+            </svg>`;
+        }
+
+        // Hover and touch drag only preview (crosshair and readout, from local state).
+        // A click, or releasing a touch, commits once through setMonth.
+        function chartSlot(e) {
+            const r = trendsChart.getBoundingClientRect();
+            const slot = (r.width - TR_PAD_L - TR_PAD_R) / 12;
+            return Math.min(11, Math.max(0, Math.floor((e.clientX - r.left - TR_PAD_L) / slot)));
+        }
+
+        function previewMonth(i) {
+            if (!state.platforms.length || i === trendsPreview) return;
+            trendsPreview = i;
+            drawTrends();
+        }
+
+        function clearPreview() {
+            if (trendsPreview === null) return;
+            trendsPreview = null;
+            drawTrends();
+        }
+
+        trendsChart.addEventListener('pointerdown', (e) => {
+            if (e.button > 0 || !state.platforms.length) return;
+            chartDown = true;
+            trendsChart.setPointerCapture(e.pointerId);
+            previewMonth(chartSlot(e));
+        });
+        trendsChart.addEventListener('pointermove', (e) => {
+            if (chartDown || e.pointerType === 'mouse') previewMonth(chartSlot(e));
+        });
+        trendsChart.addEventListener('pointerup', (e) => {
+            if (!chartDown) return;
+            chartDown = false;
+            const i = chartSlot(e);
+            trendsPreview = null;
+            setMonth(i);
+        });
+        trendsChart.addEventListener('pointercancel', () => {
+            chartDown = false;
+            clearPreview();
+        });
+        trendsChart.addEventListener('pointerleave', () => {
+            if (!chartDown) clearPreview();
+        });
+
+        // Redraw when the container width changes: tab shown (width is 0 while hidden), window resize, rotation
+        function redrawIfResized() {
+            if (trendsChart.clientWidth !== trendsDrawnWidth) drawTrends();
+        }
+        window.addEventListener('resize', redrawIfResized);
+        if (window.ResizeObserver) new ResizeObserver(redrawIfResized).observe(trendsChart);
 
         // Close modal on outside click
         document.getElementById('addModal').addEventListener('click', (e) => {
