@@ -167,7 +167,7 @@
                 <div><b>Vault</b><span>Track</span></div>
             </div>
             <div class="acts">
-                <button type="button" class="btn icon-only-sm" onclick="exportToCSV()" aria-label="Export CSV">
+                <button type="button" class="btn icon-only-sm" onclick="commitPendingEdit(); exportToCSV()" aria-label="Export CSV">
                     <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10m0 0l-4-4m4 4l4-4M5 19h14"/></svg>
                     <span class="lbl">Export</span>
                 </button>
@@ -347,7 +347,16 @@
             });
         }
 
+        // Commit a pending field edit. Some touch browsers do not blur a field when a button is tapped,
+        // so its change event would fire late: after a month switch (writing into the wrong month) or
+        // after an export (leaving the edit out of the file).
+        function commitPendingEdit() {
+            const active = document.activeElement;
+            if (active && active.closest && active.closest('#platformsList')) active.blur();
+        }
+
         function setMonth(index) {
+            commitPendingEdit();
             state.currentMonth = index;
             renderMonthTabs();
             renderDashboard();
@@ -392,6 +401,7 @@
                 };
             }
             
+            carryForward(platform);
             state.platforms.push(platform);
             saveToStorage();
             closeAddModal();
@@ -415,17 +425,9 @@
             
             monthData[field] = numValue;
             
-            // If this is not the last month, carry forward balance to next month
-            if (state.currentMonth < 11) {
-                const currentBalance = calculateMonthBalance(platform, state.currentMonth);
-                const nextMonthData = platform.data[state.currentMonth + 1];
-                
-                // Only auto-update if next month hasn't been manually edited (simple heuristic: if additional and interest are 0)
-                if (nextMonthData.additional === 0 && nextMonthData.interest === 0) {
-                    nextMonthData.initial = currentBalance;
-                }
-            }
-            
+            // Every later month opens with the previous month's closing balance
+            carryForward(platform);
+
             saveToStorage();
             renderDashboard();
         }
@@ -440,6 +442,14 @@
             const principal = data.initial + data.additional;
             if (principal <= 0) return 0;
             return (data.interest / principal) * 12 * 100;
+        }
+
+        // After the start month, a platform's initial balance is derived, never entered:
+        // each month opens with the previous month's closing balance, all the way to December.
+        function carryForward(platform) {
+            for (let i = platform.startMonth + 1; i < 12; i++) {
+                platform.data[i].initial = calculateMonthBalance(platform, i - 1);
+            }
         }
 
         // Headline APY: total interest over total principal, same formula as the CSV TOTAL row
