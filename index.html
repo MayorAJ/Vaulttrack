@@ -128,8 +128,27 @@
         .tr-chart svg{display:block;width:100%;height:auto}
         .tr-ax{font:400 11px 'IBM Plex Mono',ui-monospace,monospace;fill:var(--grey)}
         .tr-ax.faint{opacity:.4}
+        .tr-ax.halo{stroke:var(--bg);stroke-width:3px;stroke-linejoin:round;paint-order:stroke}
         .tr-cross{stroke:var(--grey);stroke-opacity:.5;stroke-width:1}
-        .tr-base{stroke:var(--line);stroke-width:1}
+        .tr-legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-bottom:10px;font:400 11px/1.4 'IBM Plex Mono',ui-monospace,monospace;color:var(--grey)}
+        .tr-legend .sw{display:inline-block;width:14px;margin-right:6px;vertical-align:middle;border-top:2px solid var(--eq)}
+        .tr-legend .sw-bar,.tr-legend .sw-good,.tr-legend .sw-bad{height:8px;border:0;border-radius:2px}
+        .tr-legend .sw-bar{background:var(--eq);opacity:.6}
+        .tr-legend .sw-out,.tr-legend .sw-bad{background:var(--bad)}
+        .tr-legend .sw-good{background:var(--good)}
+        .tr-legend .sw-dash{border-top:1.5px dashed var(--grey)}
+        .tr-foot{margin:10px 0 0;font:400 11px/1.5 'IBM Plex Mono',ui-monospace,monospace;color:var(--grey)}
+        .tr-title{font:500 11px 'IBM Plex Mono',ui-monospace,monospace;fill:var(--grey)}
+        .tr-grid{stroke:var(--line);stroke-width:1}
+        .tr-zero{stroke:var(--grey);stroke-opacity:.5;stroke-width:1}
+        .tr-line{fill:none;stroke:var(--eq);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+        .tr-dot{fill:var(--eq)}
+        .tr-bar{fill:var(--eq)}
+        .tr-bar.neg{fill:var(--bad)}
+        .tr-flat{fill:var(--grey)}
+        .tr-infl{stroke:var(--grey);stroke-width:1.5;stroke-dasharray:5 4}
+        .tr-shade-up{fill:var(--good);fill-opacity:.22}
+        .tr-shade-dn{fill:var(--bad);fill-opacity:.22}
 
         /* Footer */
         .foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:24px;padding-top:16px;border-top:1px solid var(--line);font:400 12px/1 'IBM Plex Mono',ui-monospace,monospace;color:var(--grey)}
@@ -253,11 +272,20 @@
 
         <!-- Trends (read-only, derived from state) -->
         <section class="trends" id="trendsView" role="tabpanel" aria-labelledby="tabTrends" hidden>
+            <div class="tr-legend" id="trLegend">
+                <span><i class="sw"></i>Balance and APY</span>
+                <span><i class="sw sw-bar"></i>Net deposit</span>
+                <span><i class="sw sw-bar sw-out"></i>Net withdrawal</span>
+                <span><i class="sw sw-dash"></i>Inflation</span>
+                <span><i class="sw sw-good"></i>Above inflation</span>
+                <span><i class="sw sw-bad"></i>Below inflation</span>
+            </div>
             <div class="tr-read" id="trendsReadout">
                 <div class="l1" id="trLine1"></div>
                 <div id="trLine2"></div>
             </div>
             <div class="tr-chart" id="trendsChart"></div>
+            <p class="tr-foot" id="trFoot">Plotted from the first to the last month with an entry. Inflation is today's single figure drawn across every month.</p>
         </section>
 
         <!-- Footer -->
@@ -799,10 +827,11 @@
         // Per-month balance, net flow, interest and weighted APY, in one pass over state.
         // Balance and APY reuse calculateMonthBalance and calculateWeightedAPY.
         // A month where no platform has interest entered has apy null (a gap), never 0.
-        // last is the last month with any entry: a deposit or withdrawal, interest, or a platform starting.
+        // first and last are the first and last months with any entry: a deposit or withdrawal, interest,
+        // or a platform starting. Only months from first to last are plotted.
         function trendSeries() {
             const rows = [];
-            let last = -1;
+            let first = -1, last = -1;
             for (let i = 0; i < 12; i++) {
                 const active = state.platforms.filter(p => p.startMonth <= i);
                 let balance = 0, flow = 0, interest = 0, entry = false;
@@ -815,30 +844,170 @@
                 });
                 const hasInterest = active.some(p => p.data[i].interest !== 0);
                 rows.push({ balance, flow, interest, apy: hasInterest ? calculateWeightedAPY(active, i) : null });
-                if (entry) last = i;
+                if (entry) {
+                    if (first < 0) first = i;
+                    last = i;
+                }
             }
-            return { rows, last };
+            return { rows, first, last };
         }
 
         function naira(n) {
             return (n < 0 ? '-' : '') + '₦' + Math.abs(Math.round(n)).toLocaleString('en-NG');
         }
 
+        function netText(flow) {
+            return (flow > 0 ? '+' : flow < 0 ? '-' : '') + naira(Math.abs(flow));
+        }
+
         function trendsReadout(i, series) {
             const name = months[i].slice(0, 3);
+            if (i < series.first) return { l1: name, l2: 'before the first entry, nothing plotted' };
             if (i > series.last) return { l1: name, l2: 'after the last entry, nothing plotted' };
             const r = series.rows[i];
-            const l1 = `${name} · ${naira(r.balance)} · net ${r.flow > 0 ? '+' : r.flow < 0 ? '-' : ''}${naira(Math.abs(r.flow))}`;
+            const l1 = `${name} · ${naira(r.balance)} · net ${netText(r.flow)}`;
             if (r.apy === null) return { l1, l2: 'no interest entered' };
             const over = r.apy > state.inflationRate;
             const gap = Math.abs(r.apy - state.inflationRate).toFixed(2);
             return { l1, l2: `${r.apy.toFixed(2)}% APY · ${gap} pts <span class="${over ? 'good' : 'bad'}">${over ? 'over' : 'under'}</span> inflation` };
         }
 
+        // Chart geometry. Two stacked panels share one 12-slot month axis (left pad 46, right pad 12).
+        const TR_H = { balance: 160, apy: 170 };
+        const TR_TOP = 24;      // title row above each plot
+        const TR_BOTTOM = 8;    // padding under the plot
+        const TR_AXIS = 28;     // room for the month labels under the last panel
+
+        function trendsContext(width, series, shown) {
+            const slot = (width - TR_PAD_L - TR_PAD_R) / 12;
+            return { width, slot, series, first: series.first, last: series.last, shown, cx: (i) => TR_PAD_L + slot * (i + 0.5) };
+        }
+
+        const trim = (n) => String(+n.toFixed(2));
+
+        // Axis numbers in k or M: 0, 250k, 1.5M
+        function axisNumber(v) {
+            const a = Math.abs(v);
+            const s = a >= 1e6 ? trim(a / 1e6) + 'M' : a >= 1e3 ? trim(a / 1e3) + 'k' : trim(a);
+            return (v < 0 ? '-' : '') + s;
+        }
+
+        // Round a maximum up to 1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8 or 10 times a power of ten
+        function niceMax(v) {
+            if (v <= 0) return 1;
+            const pow = Math.pow(10, Math.floor(Math.log10(v)));
+            const f = v / pow;
+            return [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(s => f <= s + 1e-9) * pow;
+        }
+
+        // One SVG per panel, each with its own label, so the crosshair lines up across all three
+        function trendsPanel(c, height, label, plotBottom, body) {
+            const x = c.cx(c.shown).toFixed(1);
+            return `<svg viewBox="0 0 ${c.width} ${height}" width="${c.width}" height="${height}" role="img" aria-label="${label}">
+                <line class="tr-cross" x1="${x}" x2="${x}" y1="${TR_TOP}" y2="${plotBottom}"/>
+                ${body}
+            </svg>`;
+        }
+
+        function gridAndTicks(c, ticks, y, format) {
+            return ticks.map(v => {
+                const py = y(v).toFixed(1);
+                return `<line class="tr-grid" x1="${TR_PAD_L}" x2="${c.width - TR_PAD_R}" y1="${py}" y2="${py}"/>`
+                    + `<text class="tr-ax" x="${TR_PAD_L - 6}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end">${format(v)}</text>`;
+            }).join('');
+        }
+
+        // Balance line over net deposit and withdrawal bars, on one naira axis.
+        // A platform's starting deposit counts as a net deposit, so the bars are not the CSV Deposits/Withdrawals column.
+        function balancePanel(c) {
+            const H = TR_H.balance, bottom = H - TR_BOTTOM;
+            const rows = c.series.rows.map((r, i) => ({ i, balance: r.balance, flow: r.flow })).slice(c.first, c.last + 1);
+            const lo = Math.min(0, ...rows.map(r => r.flow));
+            const hi = niceMax(Math.max(0, ...rows.map(r => r.balance), ...rows.map(r => r.flow)));
+            const y = (v) => TR_TOP + (hi - Math.min(Math.max(v, lo), hi)) / (hi - lo) * (bottom - TR_TOP);
+            // Bars first, from the zero line, faint so the balance line stays dominant
+            const w = Math.min(30, c.slot * 0.55);
+            const bars = rows.map(r => {
+                const mid = c.cx(r.i);
+                if (r.flow === 0) return `<circle class="tr-flat" cx="${mid.toFixed(1)}" cy="${y(0).toFixed(1)}" r="2.5"/>`;
+                const y0 = y(0), y1 = y(r.flow);
+                return `<rect class="tr-bar${r.flow < 0 ? ' neg' : ''}" x="${(mid - w / 2).toFixed(1)}" y="${Math.min(y0, y1).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(2, Math.abs(y1 - y0)).toFixed(1)}" rx="2" opacity="${r.i === c.shown ? 0.7 : 0.4}"/>`;
+            }).join('');
+            // Then the balance line and dots on top
+            const path = rows.map((r, k) => `${k ? 'L' : 'M'}${c.cx(r.i).toFixed(1)} ${y(r.balance).toFixed(1)}`).join(' ');
+            const dots = rows.map(r => `<circle class="tr-dot" cx="${c.cx(r.i).toFixed(1)}" cy="${y(r.balance).toFixed(1)}" r="${r.i === c.shown ? 5 : 3}"/>`).join('');
+            // Zero first, then the extremes; a label that would sit on top of one already placed is dropped
+            // (a tiny withdrawal next to a large balance would otherwise print -5k over 0)
+            const allZero = lo === 0 && !rows.some(r => r.balance > 0 || r.flow > 0);
+            const wanted = allZero ? [0] : [0, hi, lo < 0 ? lo : null, hi / 2].filter(v => v !== null);
+            const ticks = wanted.filter((v, k) => wanted.slice(0, k).every(u => Math.abs(y(v) - y(u)) >= 12));
+            const a = rows[0], b = rows[rows.length - 1];
+            const label = `Total balance by month, ${naira(a.balance)} in ${months[a.i]} to ${naira(b.balance)} in ${months[b.i]}, with net deposits and withdrawals as bars, ${netText(a.flow)} in ${months[a.i]} to ${netText(b.flow)} in ${months[b.i]}.`;
+            return trendsPanel(c, H, label, bottom, `
+                <text class="tr-title" x="${TR_PAD_L}" y="13">Balance and net deposits, ₦</text>
+                ${gridAndTicks(c, ticks, y, axisNumber)}
+                <line class="tr-zero" x1="${TR_PAD_L}" x2="${c.width - TR_PAD_R}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}"/>
+                ${bars}
+                <path class="tr-line" d="${path}"/>
+                ${dots}`);
+        }
+
+        // Weighted APY against today's inflation. A gap (no interest entered) breaks the line; a lone point is only a dot.
+        // Shading sits between the APY line and the inflation line: good above it, bad below it.
+        function apyPanel(c) {
+            const H = TR_H.apy, bottom = H - TR_AXIS;
+            const rate = state.inflationRate;
+            const rows = c.series.rows.slice(0, c.last + 1);
+            const known = rows.filter(r => r.apy !== null).map(r => r.apy);
+            const yMax = Math.max(20, Math.floor(Math.max(0, rate, ...known) / 5) * 5 + 5);
+            const y = (v) => TR_TOP + (1 - Math.min(Math.max(v, 0), yMax) / yMax) * (bottom - TR_TOP);
+            const yb = y(rate);
+            const runs = [];
+            let run = [];
+            rows.forEach((r, i) => {
+                if (r.apy === null) { if (run.length) runs.push(run); run = []; }
+                else run.push({ i, v: r.apy });
+            });
+            if (run.length) runs.push(run);
+            const pt = (p) => `${c.cx(p.i).toFixed(1)} ${y(p.v).toFixed(1)}`;
+            const line = (r) => r.map((p, k) => (k ? 'L' : 'M') + pt(p)).join(' ');
+            const joined = runs.filter(r => r.length > 1);
+            const shades = joined.map(r => {
+                const d = `${line(r)} L${c.cx(r[r.length - 1].i).toFixed(1)} ${yb.toFixed(1)} L${c.cx(r[0].i).toFixed(1)} ${yb.toFixed(1)} Z`;
+                return `<path class="tr-shade-up" d="${d}" clip-path="url(#trClipUp)"/><path class="tr-shade-dn" d="${d}" clip-path="url(#trClipDn)"/>`;
+            }).join('');
+            const lines = joined.map(r => `<path class="tr-line" d="${line(r)}"/>`).join('');
+            const dots = runs.flat().map(p => `<circle class="tr-dot" cx="${c.cx(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="${p.i === c.shown ? 5 : 3}"/>`).join('');
+            const step = yMax <= 20 ? 5 : yMax <= 40 ? 10 : 20;
+            const ticks = [];
+            for (let v = 0; v <= yMax; v += step) ticks.push(v);
+            const nearTop = yb < TR_TOP + 14;
+            const inflation = `<line class="tr-infl" x1="${TR_PAD_L}" x2="${c.width - TR_PAD_R}" y1="${yb.toFixed(1)}" y2="${yb.toFixed(1)}"/>`
+                + `<text class="tr-ax halo" x="${c.width - TR_PAD_R}" y="${(nearTop ? yb + 14 : yb - 6).toFixed(1)}" text-anchor="end">Inflation ${trim(rate)}% (current)</text>`;
+            const xLabels = months.map((m, i) =>
+                `<text class="tr-ax${i < c.first || i > c.last ? ' faint' : ''}" x="${c.cx(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${c.slot >= 34 ? m.slice(0, 3) : String(i + 1).padStart(2, '0')}</text>`
+            ).join('');
+            const label = `Weighted APY by month against ${trim(rate)}% inflation. ${known.length} of ${c.last - c.first + 1} plotted months have interest entered.`;
+            return trendsPanel(c, H, label, bottom, `
+                <defs>
+                    <clipPath id="trClipUp"><rect x="0" y="0" width="${c.width}" height="${yb.toFixed(1)}"/></clipPath>
+                    <clipPath id="trClipDn"><rect x="0" y="${yb.toFixed(1)}" width="${c.width}" height="${(H - yb).toFixed(1)}"/></clipPath>
+                </defs>
+                <text class="tr-title" x="${TR_PAD_L}" y="13">Weighted APY vs inflation, %</text>
+                ${gridAndTicks(c, ticks, y, (v) => v + '%')}
+                ${shades}
+                ${inflation}
+                ${lines}
+                ${dots}
+                ${xLabels}`);
+        }
+
         function drawTrends() {
             if (view !== 'trends') return;
             const line1 = document.getElementById('trLine1');
             const line2 = document.getElementById('trLine2');
+            document.getElementById('trLegend').hidden = !state.platforms.length;
+            document.getElementById('trFoot').hidden = !state.platforms.length;
             if (!state.platforms.length) {
                 line1.textContent = '';
                 line2.textContent = '';
@@ -853,16 +1022,8 @@
             const width = trendsChart.clientWidth;
             trendsDrawnWidth = width;
             if (!width) return;
-            const slot = (width - TR_PAD_L - TR_PAD_R) / 12;
-            const cx = (i) => (TR_PAD_L + slot * (i + 0.5)).toFixed(1);
-            const labels = months.map((m, i) =>
-                `<text class="tr-ax${i > series.last ? ' faint' : ''}" x="${cx(i)}" y="26" text-anchor="middle">${slot >= 34 ? m.slice(0, 3) : String(i + 1).padStart(2, '0')}</text>`
-            ).join('');
-            trendsChart.innerHTML = `<svg viewBox="0 0 ${width} 36" width="${width}" height="36" role="img" aria-label="Month axis. Selected month: ${months[shown]}.">
-                <line class="tr-base" x1="${TR_PAD_L}" x2="${width - TR_PAD_R}" y1="6" y2="6"/>
-                <line class="tr-cross" x1="${cx(shown)}" x2="${cx(shown)}" y1="0" y2="36"/>
-                ${labels}
-            </svg>`;
+            const c = trendsContext(width, series, shown);
+            trendsChart.innerHTML = balancePanel(c) + apyPanel(c);
         }
 
         // Hover and touch drag only preview (crosshair and readout, from local state).
