@@ -4,292 +4,271 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VaultTrack — Personal Savings Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2072%2072'%3E%3Cdefs%3E%3ClinearGradient%20id='rgm'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%23f6e3c8'/%3E%3Cstop%20offset='.45'%20stop-color='%23e8b4a0'/%3E%3Cstop%20offset='.75'%20stop-color='%23f2c6c0'/%3E%3Cstop%20offset='1'%20stop-color='%23c8814a'/%3E%3C/linearGradient%3E%3Cmask%20id='k'%20maskUnits='userSpaceOnUse'%20x='0'%20y='0'%20width='72'%20height='72'%3E%3Crect%20width='72'%20height='72'%20fill='%23fff'/%3E%3Cpath%20d='M25%2033V25a11%2011%200%200%201%2022%200V33'%20fill='none'%20stroke='%23000'%20stroke-width='5.5'/%3E%3Crect%20x='15'%20y='33'%20width='42'%20height='29'%20fill='%23000'/%3E%3Crect%20x='22'%20y='39'%20width='9'%20height='9'%20fill='%23fff'/%3E%3Crect%20x='40.5'%20y='51'%20width='7'%20height='7'%20fill='none'%20stroke='%23fff'%20stroke-width='2.5'/%3E%3Cpath%20d='M22%2058L50%2038'%20stroke='%23fff'%20stroke-width='3'/%3E%3C/mask%3E%3C/defs%3E%3Cpath%20d='M10.7%202H70V70H2V25Z'%20fill='url(%23rgm)'%20mask='url(%23k)'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        // Apply the saved theme before first paint so light mode does not flash dark
+        try { if (localStorage.getItem('vaultTrackTheme') === 'light') document.documentElement.setAttribute('data-theme', 'light'); } catch (e) {}
+    </script>
+
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            min-height: 100vh;
+        :root{--bg:#130f0e;--line:#2f2321;--ink:#f6ebe6;--grey:#a8978f;--good:#5fd38d;--bad:#f2766b;--btn:#e8b4a0;--btnt:#2a1410;--logo:#e8b4a0;--logoon:#2a1410;--focus:#e8b4a0;color-scheme:dark}
+        :root[data-theme="light"]{--bg:#f5efe9;--line:#e2d6cc;--ink:#1d1512;--grey:#6b5f58;--good:#187c49;--bad:#c23a2e;--btn:#1d1512;--btnt:#f5efe9;--logo:#c8814a;--logoon:#f5efe9;--focus:#1d1512;color-scheme:light}
+        :root{--ul:color-mix(in srgb,var(--grey) 75%,var(--bg))}
+
+        .sw1{background:radial-gradient(90% 120% at 90% 0%,rgba(255,255,255,.75),rgba(255,255,255,0) 45%),radial-gradient(60% 90% at 10% 100%,rgba(200,129,74,.55),rgba(200,129,74,0) 60%),conic-gradient(from 200deg at 40% 60%,#f3f0ee,#f2c6c0,#e8b4a0,#f6e3c8,#e0a08a,#f3f0ee,#f2c6c0)}
+        .sw2{background:radial-gradient(80% 100% at 10% 0%,rgba(255,255,255,.6),rgba(255,255,255,0) 50%),conic-gradient(from 60deg at 70% 40%,#e8b4a0,#f6e3c8,#f3f0ee,#c8814a,#f2c6c0,#e8b4a0)}
+        .sw3{background:radial-gradient(70% 90% at 80% 100%,rgba(255,255,255,.6),rgba(255,255,255,0) 50%),conic-gradient(from 300deg at 40% 50%,#f6e3c8,#f3f0ee,#d9a27a,#f2c6c0,#f3f0ee,#f6e3c8)}
+        .hero::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(100deg,rgba(255,255,255,.12) 0 1px,transparent 1px 4px);pointer-events:none}
+
+        *{box-sizing:border-box}
+        [hidden]{display:none!important}
+        html{-webkit-text-size-adjust:100%}
+        body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:'Space Grotesk',system-ui,sans-serif;font-size:15px;line-height:1.4;-webkit-font-smoothing:antialiased}
+        button,input,select{font:inherit;color:inherit}
+        button{cursor:pointer}
+        .mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+        .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+        :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+        .hero :focus-visible{outline-color:#2a1410}
+        .ico{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+        .wrap{max-width:880px;margin:0 auto;padding:16px 16px 32px}
+
+        /* Header */
+        .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+        .brand{display:flex;align-items:center;gap:8px;font-size:18px;letter-spacing:-.03em;line-height:1}
+        .brand svg{width:26px;height:26px;flex:none}
+        .brand b{font-weight:700}
+        :root[data-theme="light"] .brand .mark{fill:var(--logo)}
+        .brand span{font-weight:400;color:var(--grey)}
+        .acts{display:flex;gap:8px}
+        .btn{height:34px;padding:0 12px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;font:500 12px/1 'IBM Plex Mono',ui-monospace,monospace;background:transparent;color:var(--ink);border:1px solid var(--line);white-space:nowrap}
+        .btn.fill{background:var(--btn);color:var(--btnt);border-color:var(--btn)}
+        @media (max-width:419px){
+            .btn .lbl{display:none}
+            .btn.icon-only-sm{padding:0 10px}
         }
-        
-        .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+
+        /* Banner */
+        .hero{position:relative;overflow:hidden;border-radius:16px;padding:12px 16px 10px;color:#2a1410}
+        .hero>*{position:relative;z-index:1}
+        .hero-top{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px 12px}
+        .lab{font:500 11px/1 'IBM Plex Mono',ui-monospace,monospace;text-transform:uppercase;letter-spacing:.08em;color:rgba(42,20,16,.7);margin-bottom:6px}
+        .amt{font-weight:700;font-size:clamp(28px,6vw,36px);line-height:1.1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+        .amt .dec{opacity:.6}
+        .pill{background:rgba(42,20,16,.9);color:#f6e3c8;border-radius:999px;padding:5px 10px;font:500 12px/1 'IBM Plex Mono',ui-monospace,monospace;white-space:nowrap}
+        .months{display:flex;margin:10px -6px 0}
+        .mo{flex:1 1 0;min-width:0;height:28px;border:0;border-radius:8px;background:transparent;color:#2a1410;font:500 11px/1 'IBM Plex Mono',ui-monospace,monospace;padding:0}
+        .mo:hover{background:rgba(42,20,16,.12)}
+        .mo.on{background:rgba(42,20,16,.9);color:#f6e3c8}
+
+        /* Inflation line */
+        .infl{padding:14px 2px 0}
+        .infl-row{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px 16px;font:400 12px/1.5 'IBM Plex Mono',ui-monospace,monospace}
+        .infl-row b{font-weight:500}
+        .gap{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 6px}
+        .good{color:var(--good)}
+        .bad{color:var(--bad)}
+        .neutral{color:var(--grey)}
+        .inl{width:8ch;border:0;border-bottom:1px solid currentColor;border-radius:0;background:transparent;color:inherit;font:inherit;text-align:right;padding:0 2px;-moz-appearance:textfield;appearance:textfield}
+        .inl::-webkit-inner-spin-button,.inl::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+        .track{position:relative;height:5px;border-radius:3px;background:var(--line);margin-top:10px}
+        .tfill{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:linear-gradient(90deg,#c8814a,#e8b4a0)}
+        .tick{position:absolute;top:-4px;bottom:-4px;width:2px;border-radius:1px;background:var(--ink)}
+        .cap{margin:8px 0 0;font:400 11px/1.4 'IBM Plex Mono',ui-monospace,monospace;color:var(--grey)}
+
+        /* Ledger */
+        .ledger{margin-top:20px}
+        .lh,.row{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.1fr);gap:12px;align-items:center}
+        .lh{padding-bottom:8px;border-bottom:1px solid var(--line);font:500 11px/1.3 'IBM Plex Mono',ui-monospace,monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--grey)}
+        .lh span:last-child{text-align:right}
+        .row{padding:14px 0;border-bottom:1px solid var(--line)}
+        .row.tot{border-bottom:0}
+        .who{display:flex;align-items:center;gap:12px;min-width:0}
+        .chip{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#2a1410;font:500 12px/1 'IBM Plex Mono',ui-monospace,monospace}
+        .id{min-width:0}
+        .nm{font-weight:500;font-size:15px;line-height:1.25;overflow-wrap:anywhere}
+        .sub{display:flex;flex-wrap:wrap;align-items:center;gap:0 6px;margin-top:2px;font:400 11px/1.6 'IBM Plex Mono',ui-monospace,monospace;color:var(--grey)}
+        .del{margin-left:auto;flex:none;width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:var(--grey)}
+        .del:hover{color:var(--bad)}
+        .del .ico{width:16px;height:16px}
+        .mlab{display:none;margin-bottom:2px;font:500 10px/1.3 'IBM Plex Mono',ui-monospace,monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--grey)}
+        .money{position:relative;display:block}
+        .money .cur{position:absolute;left:0;bottom:6px;color:var(--grey);font:400 13px/1 'IBM Plex Mono',ui-monospace,monospace;pointer-events:none}
+        .ul{width:100%;background:transparent;border:0;border-bottom:1px solid var(--ul);border-radius:0;padding:6px 0 6px 16px;font:400 13px/1.2 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink)}
+        input[type="number"].ul{-moz-appearance:textfield;appearance:textfield}
+        .ul::-webkit-inner-spin-button,.ul::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+        .ul::placeholder{color:var(--grey);opacity:.7}
+        select.ul option{background:var(--bg);color:var(--ink)}
+        .money.sm{display:inline-block;width:9.5em}
+        .money.sm .cur{font-size:11px;bottom:3px}
+        .money.sm .ul{font-size:11px;padding:2px 0 2px 12px}
+        .bal{text-align:right}
+        .bal .b{display:block;font:500 14px/1.3 'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+        .bal .a{display:inline-flex;align-items:center;gap:4px;margin-top:2px;font:400 11px/1.3 'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+        .arrow{width:9px;height:9px;fill:currentColor}
+        .tot .nm{font:500 11px/1 'IBM Plex Mono',ui-monospace,monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--grey)}
+        .tot .tv{font:500 13px/1.3 'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+        .empty{padding:48px 0;text-align:center;color:var(--grey)}
+        .empty p{margin:0 0 16px}
+        .empty .tag{margin-bottom:4px;color:var(--ink);font-weight:500}
+
+        /* Footer */
+        .foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:24px;padding-top:16px;border-top:1px solid var(--line);font:400 12px/1 'IBM Plex Mono',ui-monospace,monospace;color:var(--grey)}
+        .foot .where{display:inline-flex;align-items:center;gap:6px}
+        .tt{height:30px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--grey);font:500 12px/1 'IBM Plex Mono',ui-monospace,monospace}
+        .tt:hover{color:var(--ink)}
+
+        /* Add platform modal */
+        .modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.6)}
+        .modal.open{display:flex}
+        .panel{width:100%;max-width:420px;background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:20px}
+        .panel h2{margin:0 0 16px;font-size:18px;font-weight:700;letter-spacing:-.03em}
+        .fld{display:block;margin-bottom:16px}
+        .fld>span:first-child{display:block;margin-bottom:2px;font:500 11px/1.3 'IBM Plex Mono',ui-monospace,monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--grey)}
+        .fld .ul{padding-left:0}
+        .fld .money .ul{padding-left:16px}
+        .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+
+        /* Under 560px: rows become two columns, name and balance span both */
+        @media (max-width:559px){
+            .lh{display:none}
+            .row{grid-template-columns:1fr 1fr;gap:12px 16px}
+            .row .who,.row .bal{grid-column:1/-1}
+            .mlab{display:block}
+            .bal{display:flex;align-items:center;justify-content:space-between;text-align:left}
+            .bal .figs{text-align:right}
         }
-        
-        .glass-card {
-            background: rgba(51, 65, 85, 0.4);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.3s ease;
-        }
-        
-        .glass-card:hover {
-            background: rgba(51, 65, 85, 0.5);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
-        }
-        
-        .beating-inflation {
-            border-left: 4px solid #10b981;
-        }
-        
-        .losing-inflation {
-            border-left: 4px solid #f43f5e;
-        }
-        
-        .month-tab {
-            transition: all 0.2s ease;
-        }
-        
-        .month-tab.active {
-            background: rgba(59, 130, 246, 0.2);
-            border-color: rgba(59, 130, 246, 0.5);
-            color: #60a5fa;
-        }
-        
-        .input-field {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.2s ease;
-        }
-        
-        .input-field:focus {
-            outline: none;
-            border-color: rgba(59, 130, 246, 0.5);
-            background: rgba(15, 23, 42, 0.8);
-        }
-        
-        .number-transition {
-            transition: color 0.3s ease;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .animate-slide-in {
-            animation: slideIn 0.4s ease-out;
-        }
-        
-        @keyframes pulse-green {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-            50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-        }
-        
-        @keyframes pulse-red {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); }
-            50% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); }
-        }
-        
-        .pulse-beating {
-            animation: pulse-green 2s infinite;
-        }
-        
-        .pulse-losing {
-            animation: pulse-red 2s infinite;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar {
-            height: 6px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
-        }
-        
-        .currency-input::-webkit-inner-spin-button,
-        .currency-input::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
+
+        @media (prefers-reduced-motion:no-preference){
+            .btn,.tt,.mo,.del{transition:background-color .15s,color .15s}
+            .tfill{transition:width .3s ease}
+            .tick{transition:left .3s ease}
         }
     </style>
 </head>
-<body class="text-slate-200 antialiased">
+<body>
 
-    <div class="max-w-6xl mx-auto px-4 py-6 pb-20">
-        
+    <div class="wrap">
+
         <!-- Header -->
-        <header class="mb-8">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 class="text-3xl font-bold text-white flex items-center gap-3">
-                        <i data-lucide="shield-check" class="w-8 h-8 text-blue-500"></i>
-                        VaultTrack
-                    </h1>
-                    <p class="text-slate-400 mt-1">Track your savings across Nigerian platforms against inflation</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <button onclick="exportToCSV()" class="bg-slate-700 hover:bg-slate-600 text-white px-5 py-3 rounded-xl flex items-center gap-2 transition-all font-medium">
-                        <i data-lucide="download" class="w-5 h-5"></i>
-                        Export
-                    </button>
-                    <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-500/20 font-medium">
-                        <i data-lucide="plus" class="w-5 h-5"></i>
-                        Add Platform
-                    </button>
-                </div>
+        <header class="top">
+            <div class="brand">
+                <svg viewBox="0 0 72 72" role="img" aria-label="VaultTrack logo">
+                    <defs>
+                        <linearGradient id="vtg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6e3c8"/><stop offset=".45" stop-color="#e8b4a0"/><stop offset=".75" stop-color="#f2c6c0"/><stop offset="1" stop-color="#c8814a"/></linearGradient>
+                        <mask id="vtk" maskUnits="userSpaceOnUse" x="0" y="0" width="72" height="72"><rect width="72" height="72" fill="#fff"/><path d="M25 33V25a11 11 0 0 1 22 0V33" fill="none" stroke="#000" stroke-width="5.5"/><rect x="15" y="33" width="42" height="29" fill="#000"/><rect x="22" y="39" width="9" height="9" fill="#fff"/><rect x="40.5" y="51" width="7" height="7" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M22 58L50 38" stroke="#fff" stroke-width="3"/></mask>
+                    </defs>
+                    <path class="mark" d="M10.7 2H70V70H2V25Z" fill="url(#vtg)" mask="url(#vtk)"/>
+                </svg>
+                <div><b>Vault</b><span>Track</span></div>
+            </div>
+            <div class="acts">
+                <button type="button" class="btn icon-only-sm" onclick="exportToCSV()" aria-label="Export CSV">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10m0 0l-4-4m4 4l4-4M5 19h14"/></svg>
+                    <span class="lbl">Export</span>
+                </button>
+                <button type="button" class="btn fill" onclick="openAddModal()" aria-label="Add platform">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    <span>Add platform</span>
+                </button>
             </div>
         </header>
 
-        <!-- Month Navigation -->
-        <div class="glass-panel rounded-2xl p-4 mb-6 overflow-x-auto custom-scrollbar">
-            <div class="flex gap-2 min-w-max" id="monthTabs">
+        <!-- Banner: balance, yield and month selector -->
+        <section class="hero sw1" aria-label="Balance summary">
+            <div class="hero-top">
+                <div>
+                    <div class="lab">Balance</div>
+                    <div class="amt" id="totalBalance">₦0<span class="dec">.00</span></div>
+                </div>
+                <div class="pill" id="yieldPill" title="Interest earned this month">₦0.00 yield</div>
+            </div>
+            <div class="months" id="monthTabs" role="group" aria-label="Month">
                 <!-- Generated by JS -->
             </div>
-        </div>
+        </section>
 
-        <!-- Dashboard Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <!-- Total Balance -->
-            <div class="glass-card rounded-2xl p-5 animate-slide-in" style="animation-delay: 0ms">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-slate-400 text-sm font-medium">Total Balance</span>
-                    <div class="p-2 bg-blue-500/10 rounded-lg">
-                        <i data-lucide="wallet" class="w-5 h-5 text-blue-400"></i>
-                    </div>
-                </div>
-                <div class="text-2xl font-bold text-white number-transition" id="totalBalance">₦0.00</div>
-                <div class="text-xs text-slate-500 mt-1">Across all platforms</div>
-            </div>
-
-            <!-- Monthly Yield -->
-            <div class="glass-card rounded-2xl p-5 animate-slide-in" style="animation-delay: 50ms">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-slate-400 text-sm font-medium">Monthly Yield</span>
-                    <div class="p-2 bg-emerald-500/10 rounded-lg">
-                        <i data-lucide="piggy-bank" class="w-5 h-5 text-emerald-400"></i>
-                    </div>
-                </div>
-                <div class="text-2xl font-bold text-emerald-400 number-transition" id="monthlyYield">₦0.00</div>
-                <div class="text-xs text-slate-500 mt-1">Interest earned this month</div>
-            </div>
-
-            <!-- Average APY -->
-            <div class="glass-card rounded-2xl p-5 animate-slide-in" style="animation-delay: 100ms">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-slate-400 text-sm font-medium">Average APY</span>
-                    <div class="p-2 bg-purple-500/10 rounded-lg">
-                        <i data-lucide="percent" class="w-5 h-5 text-purple-400"></i>
-                    </div>
-                </div>
-                <div class="text-2xl font-bold text-purple-400 number-transition" id="averageAPY">0.00%</div>
-                <div class="text-xs text-slate-500 mt-1">Annualized yield</div>
-            </div>
-
-            <!-- Inflation Status -->
-            <div class="glass-card rounded-2xl p-5 animate-slide-in" style="animation-delay: 150ms" id="inflationStatusCard">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-slate-400 text-sm font-medium">Inflation Beat</span>
-                    <div class="p-2 bg-slate-500/10 rounded-lg" id="inflationIconBg">
-                        <i data-lucide="activity" class="w-5 h-5 text-slate-400" id="inflationIcon"></i>
-                    </div>
-                </div>
-                <div class="text-2xl font-bold number-transition" id="inflationStatus">—</div>
-                <div class="text-xs text-slate-500 mt-1">vs <span id="inflationRateDisplay">0.00</span>% inflation</div>
-            </div>
-        </div>
-
-        <!-- Inflation Rate Input -->
-        <div class="glass-panel rounded-2xl p-5 mb-8">
-            <div class="flex flex-col md:flex-row md:items-center gap-4">
-                <div class="flex-1">
-                    <label class="block text-sm font-medium text-slate-300 mb-2">Monthly Inflation Rate (%)</label>
-                    <div class="relative max-w-xs">
-                        <input type="number" step="0.01" id="inflationInput" placeholder="e.g. 15.06" 
-                            class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-slate-500">
-                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">%</span>
-                    </div>
-                    <p class="text-xs text-slate-500 mt-2">Source: NBS — update monthly</p>
-                </div>
-                <div class="flex items-center gap-3 text-sm text-slate-400 bg-slate-800/50 px-4 py-3 rounded-xl">
-                    <i data-lucide="info" class="w-4 h-4"></i>
-                    <span>Your average APY is compared against this rate</span>
+        <!-- Inflation line -->
+        <section class="infl" aria-label="Inflation comparison">
+            <div class="infl-row">
+                <div>APY <b id="apyValue">0.00%</b></div>
+                <div class="gap neutral" id="gapLine">
+                    <span id="gapLead">No interest entered yet ·</span>
+                    <span><input type="number" step="0.01" id="inflationInput" class="inl" placeholder="15.06" aria-labelledby="inflationLabel">%</span>
+                    <span>inflation</span>
                 </div>
             </div>
-        </div>
-
-        <!-- Platforms Section -->
-        <div class="mb-4 flex items-center justify-between">
-            <h2 class="text-xl font-semibold text-white flex items-center gap-2">
-                <i data-lucide="layers" class="w-5 h-5 text-slate-400"></i>
-                Savings Platforms
-            </h2>
-            <span class="text-sm text-slate-500" id="platformCount">0 platforms</span>
-        </div>
-
-        <div id="platformsList" class="grid gap-4">
-            <!-- Platform cards generated by JS -->
-        </div>
-
-        <!-- Empty State -->
-        <div id="emptyState" class="hidden glass-panel rounded-2xl p-12 text-center">
-            <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i data-lucide="plus-circle" class="w-8 h-8 text-slate-500"></i>
+            <div class="track" aria-hidden="true">
+                <div class="tfill" id="apyFill" style="width:0%"></div>
+                <div class="tick" id="inflationTick" style="left:0%"></div>
             </div>
-            <h3 class="text-lg font-medium text-white mb-2">No platforms added yet</h3>
-            <p class="text-slate-400 mb-6">Start tracking your savings by adding your first platform</p>
-            <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl transition-colors">
-                Add Your First Platform
-            </button>
-        </div>
+            <p class="cap" id="inflationLabel">Annual inflation (YoY). NBS headline figure, update monthly.</p>
+        </section>
+
+        <!-- Ledger -->
+        <section class="ledger" aria-label="Savings platforms">
+            <div class="lh" id="ledgerHead" aria-hidden="true">
+                <span>Platform</span>
+                <span>Deposit or withdraw</span>
+                <span>Interest</span>
+                <span>Balance</span>
+            </div>
+            <div id="platformsList">
+                <!-- Platform rows generated by JS -->
+            </div>
+            <div id="emptyState" class="empty" hidden>
+                <p class="tag" id="emptyTag">Track your savings across Nigerian platforms against inflation</p>
+                <p id="emptyText">No platforms yet.</p>
+                <button type="button" class="btn fill" onclick="openAddModal()">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    <span>Add platform</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="foot">
+            <span class="where">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>
+                On this device only
+            </span>
+            <button type="button" class="tt" id="themeToggle" onclick="toggleTheme()">Light mode</button>
+        </footer>
     </div>
 
     <!-- Add Platform Modal -->
-    <div id="addModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-        <div class="glass-panel rounded-2xl p-6 w-full max-w-md animate-slide-in">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-xl font-semibold text-white">Add New Platform</h3>
-                <button onclick="closeAddModal()" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors">
-                    <i data-lucide="x" class="w-5 h-5 text-slate-400"></i>
-                </button>
-            </div>
-            
-            <form id="addPlatformForm" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-2">Platform Name</label>
-                    <input type="text" id="platformName" required placeholder="e.g. PiggyVest"
-                        class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-slate-500">
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-2">Savings Type</label>
-                    <select id="savingsType" required
-                        class="input-field w-full px-4 py-3 rounded-xl text-white bg-transparent">
-                        <option value="" class="bg-slate-800">Select type...</option>
-                    <option value="Locked" class="bg-slate-800">Locked</option>
-                    <option value="Semi-locked" class="bg-slate-800">Semi-locked</option>
-                    <option value="Flexible" class="bg-slate-800">Flexible</option>
+    <div id="addModal" class="modal">
+        <div class="panel" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+            <h2 id="addModalTitle">Add platform</h2>
+            <form id="addPlatformForm">
+                <label class="fld">
+                    <span>Platform name</span>
+                    <input type="text" id="platformName" class="ul" required placeholder="e.g. PiggyVest">
+                </label>
+                <label class="fld">
+                    <span>Savings type</span>
+                    <select id="savingsType" class="ul" required>
+                        <option value="">Select type...</option>
+                        <option value="Locked">Locked</option>
+                        <option value="Semi-locked">Semi-locked</option>
+                        <option value="Flexible">Flexible</option>
                     </select>
+                </label>
+                <label class="fld">
+                    <span>Initial deposit</span>
+                    <span class="money">
+                        <span class="cur" aria-hidden="true">₦</span>
+                        <input type="number" id="initialDeposit" class="ul" required min="0" step="0.01" placeholder="0.00">
+                    </span>
+                </label>
+                <div class="btns">
+                    <button type="button" class="btn" onclick="closeAddModal()">Cancel</button>
+                    <button type="submit" class="btn fill">Add platform</button>
                 </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-2">Initial Deposit (₦)</label>
-                    <input type="number" id="initialDeposit" required min="0" step="0.01" placeholder="0.00"
-                        class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-slate-500 currency-input">
-                </div>
-                
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition-all mt-2">
-                    Add Platform
-                </button>
             </form>
         </div>
     </div>
@@ -298,7 +277,7 @@
         // State Management
         const months = ['January', 'February', 'March', 'April', 'May', 'June', 
                        'July', 'August', 'September', 'October', 'November', 'December'];
-        
+
         let state = {
             currentMonth: 0,
             inflationRate: 15.06,
@@ -308,10 +287,10 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             loadFromStorage();
+            applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
             renderMonthTabs();
             renderDashboard();
-            lucide.createIcons();
-            
+
             // Inflation input listener
             const inflationInput = document.getElementById('inflationInput');
             inflationInput.value = state.inflationRate;
@@ -339,15 +318,33 @@
             }
         }
 
+        // Theme (stored under its own key, never inside vaultTrackData)
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            const btn = document.getElementById('themeToggle');
+            btn.textContent = theme === 'light' ? 'Dark mode' : 'Light mode';
+            btn.setAttribute('aria-label', theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode');
+        }
+
+        function toggleTheme() {
+            const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+            try { localStorage.setItem('vaultTrackTheme', next); } catch (e) {}
+            applyTheme(next);
+        }
+
         // Month Navigation
         function renderMonthTabs() {
             const container = document.getElementById('monthTabs');
-            container.innerHTML = months.map((month, index) => `
-                <button onclick="setMonth(${index})" 
-                    class="month-tab px-4 py-2 rounded-lg text-sm font-medium border border-transparent ${index === state.currentMonth ? 'active' : 'text-slate-400 hover:text-white hover:bg-slate-800'}">
-                    ${month.substring(0, 3)}
-                </button>
-            `).join('');
+            if (!container.children.length) {
+                container.innerHTML = months.map((month, index) => `
+                    <button type="button" class="mo" onclick="setMonth(${index})" aria-label="${month}">${String(index + 1).padStart(2, '0')}</button>
+                `).join('');
+            }
+            Array.from(container.children).forEach((btn, index) => {
+                const active = index === state.currentMonth;
+                btn.classList.toggle('on', active);
+                btn.setAttribute('aria-pressed', active);
+            });
         }
 
         function setMonth(index) {
@@ -357,15 +354,18 @@
         }
 
         // Platform Management
+        let modalOpener = null;
+
         function openAddModal() {
-            document.getElementById('addModal').classList.remove('hidden');
-            document.getElementById('addModal').classList.add('flex');
+            modalOpener = document.activeElement;
+            document.getElementById('addModal').classList.add('open');
+            document.getElementById('platformName').focus();
         }
 
         function closeAddModal() {
-            document.getElementById('addModal').classList.add('hidden');
-            document.getElementById('addModal').classList.remove('flex');
+            document.getElementById('addModal').classList.remove('open');
             document.getElementById('addPlatformForm').reset();
+            if (modalOpener && modalOpener.focus) modalOpener.focus();
         }
 
         document.getElementById('addPlatformForm').addEventListener('submit', (e) => {
@@ -440,6 +440,17 @@
             const principal = data.initial + data.additional;
             if (principal <= 0) return 0;
             return (data.interest / principal) * 12 * 100;
+        }
+
+        // Headline APY: total interest over total principal, same formula as the CSV TOTAL row
+        function calculateWeightedAPY(platforms, monthIndex) {
+            let interest = 0, principal = 0;
+            platforms.forEach(p => {
+                const d = p.data[monthIndex];
+                interest += d.interest;
+                principal += d.initial + d.additional;
+            });
+            return principal > 0 ? (interest / principal) * 12 * 100 : 0;
         }
           // Export to CSV, grouped by month with monthly totals (opens in Excel)
         function exportToCSV() {
@@ -519,198 +530,174 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
+
         // Rendering
+        const ARROW_UP = '<svg class="arrow" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.5L9 8H1z"/></svg>';
+        const ARROW_DOWN = '<svg class="arrow" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 8.5L1 2h8z"/></svg>';
+        const ICON_TRASH = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/></svg>';
+
+        function formatMoney(n) {
+            return n.toLocaleString('en-NG', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+
+        function escapeHTML(s) {
+            return String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+        }
+
+        function getInitials(name) {
+            const words = name.trim().split(/\s+/).filter(Boolean);
+            const letters = words.length > 1 ? words[0][0] + words[1][0] : (words[0] || '?').slice(0, 2);
+            return letters.toUpperCase();
+        }
+
+        // Arrow and color for an APY against the current inflation rate; 0 is neutral
+        function apyStatus(apy) {
+            if (apy === 0) return { cls: 'neutral', icon: '', word: '' };
+            const above = apy > state.inflationRate;
+            return { cls: above ? 'good' : 'bad', icon: above ? ARROW_UP : ARROW_DOWN, word: above ? ' above inflation' : ' below inflation' };
+        }
+
+        function apyMarkup(apy) {
+            const s = apyStatus(apy);
+            return `<span class="a ${s.cls}">${s.icon}${apy.toFixed(2)}%${s.word ? `<span class="sr">${s.word}</span>` : ''}</span>`;
+        }
+
         function renderDashboard() {
             const container = document.getElementById('platformsList');
             const emptyState = document.getElementById('emptyState');
-            const platformCount = document.getElementById('platformCount');
-            
+            const ledgerHead = document.getElementById('ledgerHead');
+
             // Only show platforms that already existed by the selected month
-            const visiblePlatforms = state.platforms.filter(p => p.startMonth <= state.currentMonth);
-            
-            if (visiblePlatforms.length === 0) {
+            const visible = state.platforms
+                .map((platform, index) => ({ platform, index }))
+                .filter(({ platform }) => platform.startMonth <= state.currentMonth);
+
+            if (visible.length === 0) {
                 container.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                platformCount.textContent = '0 platforms';
-                updateSummaryCards(0, 0, 0);
+                ledgerHead.hidden = true;
+                emptyState.hidden = false;
+                document.getElementById('emptyText').textContent = state.platforms.length === 0
+                    ? 'No platforms yet.'
+                    : 'No platforms in this month yet.';
+                document.getElementById('emptyTag').hidden = state.platforms.length !== 0;
+                updateSummary(0, 0, 0);
                 return;
             }
-            
-            emptyState.classList.add('hidden');
-            platformCount.textContent = `${visiblePlatforms.length} platform${visiblePlatforms.length !== 1 ? 's' : ''}`;
-            
+
+            emptyState.hidden = true;
+            ledgerHead.hidden = false;
+
             let totalBalance = 0;
-            let totalYield = 0;
-            let totalAPY = 0;
-            let validAPYCount = 0;
-            
-            container.innerHTML = visiblePlatforms.map(platform => {
+            let totalInterest = 0;
+            let totalDeposits = 0;
+
+            const rows = visible.map(({ platform, index }) => {
                 const data = platform.data[state.currentMonth];
                 const balance = calculateMonthBalance(platform, state.currentMonth);
                 const apy = calculateAPY(platform, state.currentMonth);
-                const isBeating = apy > state.inflationRate;
-                
+                const isStart = state.currentMonth === platform.startMonth;
+                const name = escapeHTML(platform.name);
+                const type = escapeHTML(platform.type);
+
                 totalBalance += balance;
-                totalYield += data.interest;
-                if (apy > 0) {
-                    totalAPY += apy;
-                    validAPYCount++;
-                }
-                
-                const borderClass = apy > 0 ? (isBeating ? 'beating-inflation' : 'losing-inflation') : 'border-l-4 border-slate-700';
-                
+                totalInterest += data.interest;
+                totalDeposits += data.additional;
+
+                const fromMarkup = isStart
+                    ? `from <span class="money sm"><span class="cur" aria-hidden="true">₦</span><input type="number" step="0.01" class="ul" value="${data.initial.toFixed(2)}" onchange="updatePlatformData('${platform.id}', 'initial', this.value)" aria-label="${name} initial balance"></span>`
+                    : `from ₦${formatMoney(data.initial)}`;
+
                 return `
-                    <div class="glass-card rounded-2xl p-5 ${borderClass} animate-slide-in">
-                        <div class="flex items-start justify-between mb-4">
-                            <div>
-                                <div class="flex items-center gap-3 mb-1">
-                                    <h3 class="text-lg font-semibold text-white">${platform.name}</h3>
-                                    <span class="px-2 py-1 bg-slate-700/50 rounded-md text-xs text-slate-300 border border-slate-600">
-                                        ${platform.type}
-                                    </span>
-                                </div>
-                                <div class="flex items-center gap-2 text-sm">
-                                    <span class="${isBeating ? 'text-emerald-400' : 'text-rose-400'} font-medium">
-                                        ${apy.toFixed(2)}% APY
-                                    </span>
-                                    <span class="text-slate-500">•</span>
-                                    <span class="text-slate-400">
-                                        ${isBeating ? 'Beating inflation' : 'Losing to inflation'}
-                                    </span>
-                                </div>
+                    <div class="row">
+                        <div class="who">
+                            <span class="chip sw${(index % 3) + 1}" aria-hidden="true">${escapeHTML(getInitials(platform.name))}</span>
+                            <div class="id">
+                                <div class="nm">${name}</div>
+                                <div class="sub"><span>${type} ·</span> ${fromMarkup}</div>
                             </div>
-                            <button onclick="deletePlatform('${platform.id}')" class="p-2 hover:bg-rose-500/10 hover:text-rose-400 text-slate-500 rounded-lg transition-colors">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
+                            <button type="button" class="del" onclick="deletePlatform('${platform.id}')" aria-label="Delete ${name}">${ICON_TRASH}</button>
                         </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1.5">Initial Balance</label>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₦</span>
-                                    <input type="number" step="0.01" 
-                                        value="${data.initial.toFixed(2)}"
-                                        onchange="updatePlatformData('${platform.id}', 'initial', this.value)"
-                                        class="input-field w-full pl-8 pr-3 py-2.5 rounded-lg text-sm text-white currency-input"
-                                       ${state.currentMonth > platform.startMonth ? 'readonly' : ''}>
-                                </div>
-                               ${state.currentMonth > platform.startMonth ? '<p class="text-[10px] text-slate-500 mt-1">Auto-carried from previous month</p>' : ''}
-                            </div>
-                            
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1.5">
-                                   ${state.currentMonth === platform.startMonth ? 'Additional Deposit' : 'Deposits (+) / Withdrawals (-)'}
-                                </label>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₦</span>
-                                    <input type="number" step="0.01" 
-                                        value="${data.additional === 0 ? '' : data.additional.toFixed(2)}"
-                                        onchange="updatePlatformData('${platform.id}', 'additional', this.value)"
-                                        placeholder="0.00"
-                                        class="input-field w-full pl-8 pr-3 py-2.5 rounded-lg text-sm text-white currency-input">
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1.5">Interest/Yield</label>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₦</span>
-                                    <input type="number" step="0.01" 
-                                        value="${data.interest === 0 ? '' : data.interest.toFixed(2)}"
-                                        onchange="updatePlatformData('${platform.id}', 'interest', this.value)"
-                                        placeholder="0.00"
-                                        class="input-field w-full pl-8 pr-3 py-2.5 rounded-lg text-sm text-white currency-input">
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1.5">Current Balance</label>
-                                <div class="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2.5">
-                                    <span class="text-sm font-semibold text-white">₦${balance.toLocaleString('en-NG', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                                </div>
-                            </div>
+                        <div>
+                            <span class="mlab" aria-hidden="true">Deposit or withdraw</span>
+                            <span class="money"><span class="cur" aria-hidden="true">₦</span><input type="number" step="0.01" class="ul"
+                                value="${data.additional === 0 ? '' : data.additional.toFixed(2)}"
+                                onchange="updatePlatformData('${platform.id}', 'additional', this.value)"
+                                placeholder="0.00" aria-label="${name} deposit or withdrawal"></span>
+                        </div>
+                        <div>
+                            <span class="mlab" aria-hidden="true">Interest</span>
+                            <span class="money"><span class="cur" aria-hidden="true">₦</span><input type="number" step="0.01" class="ul"
+                                value="${data.interest === 0 ? '' : data.interest.toFixed(2)}"
+                                onchange="updatePlatformData('${platform.id}', 'interest', this.value)"
+                                placeholder="0.00" aria-label="${name} interest"></span>
+                        </div>
+                        <div class="bal">
+                            <span class="mlab" aria-hidden="true">Balance</span>
+                            <div class="figs"><span class="b">₦${formatMoney(balance)}</span>${apyMarkup(apy)}</div>
                         </div>
                     </div>
                 `;
             }).join('');
-            
-            const avgAPY = validAPYCount > 0 ? totalAPY / validAPYCount : 0;
-            updateSummaryCards(totalBalance, totalYield, avgAPY);
-            
-            lucide.createIcons();
+
+            const weightedAPY = calculateWeightedAPY(visible.map(v => v.platform), state.currentMonth);
+
+            const totalsRow = `
+                <div class="row tot">
+                    <div class="who"><div class="nm">Total</div></div>
+                    <div><span class="mlab" aria-hidden="true">Deposit or withdraw</span><span class="tv">₦${formatMoney(totalDeposits)}</span></div>
+                    <div><span class="mlab" aria-hidden="true">Interest</span><span class="tv">₦${formatMoney(totalInterest)}</span></div>
+                    <div class="bal">
+                        <span class="mlab" aria-hidden="true">Balance</span>
+                        <div class="figs"><span class="b">₦${formatMoney(totalBalance)}</span>${apyMarkup(weightedAPY)}</div>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = rows + totalsRow;
+            updateSummary(totalBalance, totalInterest, weightedAPY);
         }
 
-        function updateSummaryCards(totalBalance, totalYield, avgAPY) {
-            // Animate numbers
-            animateValue('totalBalance', totalBalance, 'currency');
-            animateValue('monthlyYield', totalYield, 'currency');
-            animateValue('averageAPY', avgAPY, 'percent');
-            
-            // Inflation status
-            const statusEl = document.getElementById('inflationStatus');
-            const iconEl = document.getElementById('inflationIcon');
-            const iconBg = document.getElementById('inflationIconBg');
-            const rateDisplay = document.getElementById('inflationRateDisplay');
-            const card = document.getElementById('inflationStatusCard');
-            
-            rateDisplay.textContent = state.inflationRate.toFixed(2);
-            
-            if (avgAPY > state.inflationRate) {
-                statusEl.textContent = 'Beating';
-                statusEl.className = 'text-2xl font-bold text-emerald-400 number-transition';
-                iconEl.setAttribute('data-lucide', 'trending-up');
-                iconBg.className = 'p-2 bg-emerald-500/10 rounded-lg';
-                iconEl.className = 'w-5 h-5 text-emerald-400';
-                card.classList.add('pulse-beating');
-                card.classList.remove('pulse-losing');
+        function updateSummary(totalBalance, totalInterest, weightedAPY) {
+            // Banner: balance with a faint decimal part, and this month's interest
+            const [whole, decimals] = formatMoney(totalBalance).split('.');
+            document.getElementById('totalBalance').innerHTML = `₦${whole}<span class="dec">.${decimals}</span>`;
+            document.getElementById('yieldPill').textContent = `${totalInterest > 0 ? '+' : ''}₦${formatMoney(totalInterest)} yield`;
+
+            // Inflation line
+            const rate = state.inflationRate;
+            document.getElementById('apyValue').textContent = weightedAPY.toFixed(2) + '%';
+
+            const gapLine = document.getElementById('gapLine');
+            const gapLead = document.getElementById('gapLead');
+            if (weightedAPY === 0) {
+                gapLine.className = 'gap neutral';
+                gapLead.textContent = 'No interest entered yet ·';
             } else {
-                statusEl.textContent = 'Losing';
-                statusEl.className = 'text-2xl font-bold text-rose-400 number-transition';
-                iconEl.setAttribute('data-lucide', 'trending-down');
-                iconBg.className = 'p-2 bg-rose-500/10 rounded-lg';
-                iconEl.className = 'w-5 h-5 text-rose-400';
-                card.classList.add('pulse-losing');
-                card.classList.remove('pulse-beating');
+                const over = weightedAPY > rate;
+                gapLine.className = 'gap ' + (over ? 'good' : 'bad');
+                gapLead.textContent = `${Math.abs(weightedAPY - rate).toFixed(2)} pts ${over ? 'over' : 'under'}`;
             }
-            
-            lucide.createIcons();
+
+            // Track runs 0 to 20%, clamped
+            const pos = (v) => Math.min(Math.max(v / 20, 0), 1) * 100;
+            document.getElementById('apyFill').style.width = pos(weightedAPY) + '%';
+            document.getElementById('inflationTick').style.left = `calc(${pos(rate)}% - 1px)`;
         }
 
         function updateDashboard() {
             renderDashboard();
         }
 
-        function animateValue(id, value, type) {
-            const el = document.getElementById(id);
-            const start = parseFloat(el.textContent.replace(/[^0-9.-]/g, '')) || 0;
-            const duration = 500;
-            const startTime = performance.now();
-            
-            function update(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const easeOut = 1 - Math.pow(1 - progress, 3);
-                
-                const current = start + (value - start) * easeOut;
-                
-                if (type === 'currency') {
-                    el.textContent = '₦' + current.toLocaleString('en-NG', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                } else {
-                    el.textContent = current.toFixed(2) + '%';
-                }
-                
-                if (progress < 1) {
-                    requestAnimationFrame(update);
-                }
-            }
-            
-            requestAnimationFrame(update);
-        }
-
         // Close modal on outside click
         document.getElementById('addModal').addEventListener('click', (e) => {
             if (e.target.id === 'addModal') {
+                closeAddModal();
+            }
+        });
+
+        // Close modal with Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.getElementById('addModal').classList.contains('open')) {
                 closeAddModal();
             }
         });
