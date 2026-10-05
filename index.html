@@ -900,6 +900,24 @@
             return [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(s => f <= s + 1e-9) * pow;
         }
 
+        // Axis for a percentage scale: a nice step (1, 2, 2.5 or 5 times a power of ten) that gives 3 to 5 ticks
+        // whatever the range. top is the smallest acceptable maximum; the axis maximum is the first multiple of the
+        // step at or above it. The tightest maximum wins, and on a tie the larger step (fewer ticks).
+        function niceAxis(top) {
+            const pow = Math.pow(10, Math.floor(Math.log10(top / 5)));
+            let best = null;
+            for (let e = pow; e <= pow * 100; e *= 10) {
+                for (const m of [1, 2, 2.5, 5]) {
+                    const step = m * e;
+                    const intervals = Math.ceil(top / step - 1e-9);
+                    if (intervals < 2 || intervals > 4) continue;
+                    const max = intervals * step;
+                    if (!best || max < best.max - 1e-9 || (Math.abs(max - best.max) < 1e-9 && step > best.step)) best = { step, max };
+                }
+            }
+            return best || { step: top / 4, max: top };
+        }
+
         // One SVG per panel, each with its own label, so the crosshair lines up across all three
         function trendsPanel(c, height, label, plotBottom, body) {
             const x = c.cx(c.shown).toFixed(1);
@@ -959,7 +977,8 @@
             const rate = state.inflationRate;
             const rows = c.series.rows.slice(0, c.last + 1);
             const known = rows.filter(r => r.apy !== null).map(r => r.apy);
-            const yMax = Math.max(20, Math.floor(Math.max(0, rate, ...known) / 5) * 5 + 5);
+            const axis = niceAxis(Math.max(20, Math.floor(Math.max(0, rate, ...known) / 5) * 5 + 5));
+            const yMax = axis.max;
             const y = (v) => TR_TOP + (1 - Math.min(Math.max(v, 0), yMax) / yMax) * (bottom - TR_TOP);
             const yb = y(rate);
             const runs = [];
@@ -978,9 +997,10 @@
             }).join('');
             const lines = joined.map(r => `<path class="tr-line" d="${line(r)}"/>`).join('');
             const dots = runs.flat().map(p => `<circle class="tr-dot" cx="${c.cx(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="${p.i === c.shown ? 5 : 3}"/>`).join('');
-            const step = yMax <= 20 ? 5 : yMax <= 40 ? 10 : 20;
-            const ticks = [];
-            for (let v = 0; v <= yMax; v += step) ticks.push(v);
+            // Zero, then the top, then the steps between; a label within 12px of one already placed is dropped
+            const wanted = [0, yMax];
+            for (let k = 1; k * axis.step < yMax - 1e-9; k++) wanted.push(k * axis.step);
+            const ticks = wanted.filter((v, k) => wanted.slice(0, k).every(u => Math.abs(y(v) - y(u)) >= 12));
             const nearTop = yb < TR_TOP + 14;
             const inflation = `<line class="tr-infl" x1="${TR_PAD_L}" x2="${c.width - TR_PAD_R}" y1="${yb.toFixed(1)}" y2="${yb.toFixed(1)}"/>`
                 + `<text class="tr-ax halo" x="${c.width - TR_PAD_R}" y="${(nearTop ? yb + 14 : yb - 6).toFixed(1)}" text-anchor="end">Inflation ${trim(rate)}% (current)</text>`;
@@ -994,7 +1014,7 @@
                     <clipPath id="trClipDn"><rect x="0" y="${yb.toFixed(1)}" width="${c.width}" height="${(H - yb).toFixed(1)}"/></clipPath>
                 </defs>
                 <text class="tr-title" x="${TR_PAD_L}" y="13">Weighted APY vs inflation, %</text>
-                ${gridAndTicks(c, ticks, y, (v) => v + '%')}
+                ${gridAndTicks(c, ticks, y, (v) => axisNumber(v) + '%')}
                 ${shades}
                 ${inflation}
                 ${lines}
