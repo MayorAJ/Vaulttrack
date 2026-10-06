@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.2.0 - 2026-10-06
+New
+- Trends view: a Ledger | Trends tab row under the banner. Trends shows balance with net deposits and withdrawals in one chart, and weighted APY against the current inflation rate in another, plotted from the first to the last month with an entry
+- Hover or drag across a chart to preview a month, and click or release to select it. The selected month stays in sync with the banner
+- Net deposits include a new platform's starting deposit, so they can differ from the CSV "Deposits/Withdrawals" column in the month a platform is added
+Changes
+- Page content widened to 1120px on desktop, matching the old layout. Phones are unchanged
+- Removed the DeepSite badge script
+Fixes
+- The APY chart axis no longer piles up labels when one month's APY is very large
+Unchanged: data model, storage key, CSV layout and saved data
+
 ## v1.1.0 - 2026-10-04
 Visual redesign
 - Rose gold design with dark (default) and light themes, toggle in the footer, remembered on this device

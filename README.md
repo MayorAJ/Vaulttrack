@@ -7,13 +7,14 @@ Automatically calculates your balance, monthly yield, and annualized APY per pla
 Compares your overall APY (total interest over total principal) against Nigeria's current annual (year-on-year) inflation rate
 Carries your balance forward month to month automatically
 Works across January to December in one place
+Trends view charts your balance and net deposits, and your weighted APY against inflation, month by month
 
 Why I built it
 I save across multiple platforms for diversification but couldn't find a single tool that tracked everything in one place and told me whether my money was actually growing in real terms. So I built one.
 Tech
 
 Vanilla HTML, CSS, JavaScript — no frameworks
-Google Fonts (Space Grotesk, IBM Plex Mono), hand-written CSS and inline SVG icons, no CSS framework or icon library
+Google Fonts (Space Grotesk, IBM Plex Mono), hand-written CSS, inline SVG icons and hand-drawn inline SVG charts, no CSS framework, icon library or charting library
 localStorage for data persistence — no login, no backend, no data leaves your device
 
 Usage
@@ -26,3 +27,5 @@ Status
 - Added CSV export grouped by month with monthly totals and carry-over
 ## v1.1.0 - 2026-10-04
 - Visual redesign with dark and light themes. Headline APY is now weighted. See the CHANGELOG
+## v1.2.0 - 2026-10-06
+- Trends view with balance, net deposits and weighted APY charts. Wider page on desktop. See the CHANGELOG
